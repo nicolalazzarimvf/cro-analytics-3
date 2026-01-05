@@ -53,3 +53,5 @@ vercel --prod
 - The Neo4j graph card renders the top winner’s neighborhood plus similar experiments.
 - Admin import pages support CSV/Sheets and a scheduled cron import.
 - Authentication is email-allowlisted; adjust `AUTH_ALLOWED_EMAILS` as needed.
+
+Auto-deploy test on Mon Jan  5 15:30:50 CET 2026
