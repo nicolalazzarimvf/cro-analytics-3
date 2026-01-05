@@ -1,0 +1,618 @@
+
+> cro-analyst-frontend@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3000
+
+   ▲ Next.js 15.5.9
+   - Local:        http://127.0.0.1:3000
+   - Network:      http://127.0.0.1:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 3.5s
+ ✓ Compiled /middleware in 143ms (213 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 814ms (819 modules)
+ GET / 200 in 1100ms
+ GET / 200 in 24ms
+ ✓ Compiled /api/import/auto in 215ms (864 modules)
+ POST /api/import/auto 500 in 847ms
+ ✓ Compiled /api/auth/[...nextauth] in 378ms (764 modules)
+ GET /api/auth/signout 200 in 1089ms
+ GET /api/auth/signout 200 in 6ms
+ POST /api/auth/signout 302 in 11ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 543ms (1226 modules)
+ GET /login?callbackUrl=%2F 200 in 744ms
+ GET /api/auth/providers 304 in 24ms
+ GET /api/auth/csrf 200 in 5ms
+ POST /api/auth/signin/google 200 in 130ms
+ GET /api/auth/callback/google?state=sejrBC1qbskBfyn0ekn6WHJApJqQPcGtxIg2RuWqzXE&code=4/0ATX87lO_RY2-jDiQfc6Ei5ZW4utRbbyONU-7T01y1yFFzr1-uwFIeqZ31cxur45p7jL1cg&scope=email%20profile%20openid%20https://www.googleapis.com/auth/userinfo.email%20https://www.googleapis.com/auth/userinfo.profile%20https://www.googleapis.com/auth/spreadsheets.readonly%20https://www.googleapis.com/auth/drive.readonly&authuser=0&hd=mvfglobal.com&prompt=consent 302 in 387ms
+ GET / 200 in 54ms
+ POST /api/import/auto 200 in 6037ms
+ ○ Compiling /stats ...
+ ✓ Compiled /stats in 528ms (2026 modules)
+ GET /stats 200 in 775ms
+ ✓ Compiled in 1286ms (1930 modules)
+ GET /stats 200 in 279ms
+ ✓ Compiled in 188ms (1930 modules)
+ GET /stats 200 in 154ms
+ GET /stats 200 in 334ms
+ ✓ Compiled /experiments/[id] in 224ms (1932 modules)
+ GET /experiments/0d69637f-62b5-48d7-b842-987c98c79d06 200 in 798ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots in 218ms (1951 modules)
+ GET /api/experiments/5193898201448448/screenshots 200 in 1765ms
+ GET /api/experiments/5193898201448448/screenshots 200 in 614ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots/[fileId] in 236ms (1953 modules)
+ GET /api/experiments/5193898201448448/screenshots/1x23KKH9mFXDeXijwnKqorTt7GAmNzBAm 200 in 1416ms
+ GET /api/experiments/5193898201448448/screenshots/1_uGBWwbHHKXMk-ewJoTKwVA8Vw8XwP1v 200 in 1509ms
+ ✓ Compiled /experiments in 353ms (1937 modules)
+ GET /experiments 200 in 560ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots in 117ms (1137 modules)
+ GET /api/experiments/5193898201448448/screenshots 200 in 857ms
+ GET /api/experiments/5193898201448448/screenshots 200 in 562ms
+ ✓ Compiled in 245ms (1970 modules)
+ GET /experiments/0d69637f-62b5-48d7-b842-987c98c79d06 200 in 114ms
+ GET /experiments/0d69637f-62b5-48d7-b842-987c98c79d06 200 in 152ms
+ GET /api/experiments/5193898201448448/screenshots 200 in 588ms
+ ✓ Compiled in 261ms (1970 modules)
+ GET /experiments/0d69637f-62b5-48d7-b842-987c98c79d06 200 in 129ms
+ GET /experiments/0d69637f-62b5-48d7-b842-987c98c79d06 200 in 105ms
+ GET /api/experiments/5193898201448448/screenshots 200 in 612ms
+ GET /stats 200 in 120ms
+ GET /experiments 200 in 67ms
+ GET /experiments/bccdb527-4aeb-4e46-9c95-9c00e0320c48 200 in 35ms
+ GET /api/experiments/6703345063165952/screenshots 200 in 764ms
+ GET /api/experiments/6703345063165952/screenshots 200 in 556ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots/[fileId] in 126ms (1139 modules)
+ GET /api/experiments/6703345063165952/screenshots/1pCeftZmD31PQYSO0UWyYJ5p047r3WZ63 200 in 1195ms
+ GET /api/experiments/6703345063165952/screenshots/19ee5WYaTcSopOwZsGJ07NupHs_m0vvRO 200 in 1292ms
+ ✓ Compiled in 381ms (1951 modules)
+ GET /experiments 200 in 186ms
+ ✓ Compiled in 398ms (1951 modules)
+ GET /experiments 200 in 131ms
+ GET /experiments 200 in 152ms
+ ✓ Compiled in 302ms (1951 modules)
+ GET /experiments 200 in 88ms
+ ✓ Compiled in 244ms (1951 modules)
+ GET /experiments 200 in 89ms
+ ✓ Compiled in 172ms (1951 modules)
+ GET /experiments 200 in 84ms
+ ✓ Compiled in 210ms (1951 modules)
+ GET /experiments 200 in 88ms
+ GET /stats 200 in 85ms
+ ✓ Compiled in 155ms (1951 modules)
+ GET /stats 200 in 156ms
+ ✓ Compiled in 553ms (2329 modules)
+ GET /stats 200 in 1187ms
+ ✓ Compiled in 89ms (833 modules)
+ GET /stats 200 in 119ms
+ ✓ Compiled in 565ms (2318 modules)
+ GET /stats 200 in 453ms
+ GET /stats 200 in 397ms
+ ✓ Compiled in 402ms (2332 modules)
+ GET /stats 200 in 360ms
+ ✓ Compiled in 184ms (2332 modules)
+ ⨯ ReferenceError: Cannot access 'topExperimentMap' before initialization
+    at StatsPage (app/stats/page.tsx:199:51)
+  197 |   const hasMonthlyExtrap = totalMonthlyExtrap > 0;
+  198 |   const topWinnerByExtrap = winnerExtrap[0] ?? null;
+> 199 |   const topWinnerExperiment = topWinnerByExtrap ? topExperimentMap.get(topWinnerByExtrap.winner) : null;
+      |                                                   ^
+  200 |
+  201 |   const winnerExtrapNonZero = winnerExtrap.filter((r) => r.winner !== "N.D." && r.sum > 0);
+  202 | {
+  digest: '1200987618'
+}
+ GET /stats 200 in 179ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 284ms (2332 modules)
+ ⨯ ReferenceError: Cannot access 'topExperimentMap' before initialization
+    at StatsPage (app/stats/page.tsx:199:51)
+  197 |   const hasMonthlyExtrap = totalMonthlyExtrap > 0;
+  198 |   const topWinnerByExtrap = winnerExtrap[0] ?? null;
+> 199 |   const topWinnerExperiment = topWinnerByExtrap ? topExperimentMap.get(topWinnerByExtrap.winner) : null;
+      |                                                   ^
+  200 |
+  201 |   const winnerExtrapNonZero = winnerExtrap.filter((r) => r.winner !== "N.D." && r.sum > 0);
+  202 | {
+  digest: '1200987618'
+}
+ GET /stats 500 in 409ms
+ ⨯ ReferenceError: Cannot access 'topExperimentMap' before initialization
+    at StatsPage (app/stats/page.tsx:199:51)
+  197 |   const hasMonthlyExtrap = totalMonthlyExtrap > 0;
+  198 |   const topWinnerByExtrap = winnerExtrap[0] ?? null;
+> 199 |   const topWinnerExperiment = topWinnerByExtrap ? topExperimentMap.get(topWinnerByExtrap.winner) : null;
+      |                                                   ^
+  200 |
+  201 |   const winnerExtrapNonZero = winnerExtrap.filter((r) => r.winner !== "N.D." && r.sum > 0);
+  202 | {
+  digest: '1200987618'
+}
+ GET /stats 500 in 62ms
+ ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ ✓ Compiled in 166ms (2332 modules)
+ GET /stats 200 in 1301ms
+ ✓ Compiled in 344ms (2332 modules)
+ GET /stats 200 in 1143ms
+ ✓ Compiled in 340ms (2332 modules)
+ GET /stats 200 in 281ms
+ GET /stats 200 in 230ms
+ ✓ Compiled in 415ms (2332 modules)
+ GET /stats 200 in 224ms
+ ✓ Compiled in 174ms (2332 modules)
+ GET /stats 200 in 259ms
+ GET /stats 200 in 243ms
+ ✓ Compiled in 171ms (2332 modules)
+ GET /stats 200 in 837ms
+ GET /stats 200 in 244ms
+ ✓ Compiled in 251ms (2332 modules)
+ GET /stats 200 in 251ms
+ GET /stats 200 in 218ms
+ GET /stats 200 in 460ms
+ ✓ Compiled in 177ms (2332 modules)
+ GET /stats 200 in 206ms
+ ✓ Compiled in 224ms (2332 modules)
+ GET /stats 200 in 200ms
+ ✓ Compiled in 159ms (2332 modules)
+ GET /stats 200 in 185ms
+ ✓ Compiled in 152ms (2332 modules)
+ GET /stats 200 in 144ms
+ ✓ Compiled in 276ms (2332 modules)
+ GET /stats 200 in 378ms
+ ✓ Compiled in 180ms (2332 modules)
+ GET /stats 200 in 448ms
+ GET /stats 200 in 448ms
+ ✓ Compiled in 169ms (2332 modules)
+ GET /stats 200 in 290ms
+ GET /stats 200 in 171ms
+ GET /stats 200 in 474ms
+ ✓ Compiled in 351ms (2332 modules)
+ GET /stats 200 in 514ms
+ ✓ Compiled in 175ms (2332 modules)
+ GET /stats 200 in 238ms
+ ✓ Compiled in 144ms (2332 modules)
+ GET /stats 200 in 250ms
+ ✓ Compiled in 423ms (2332 modules)
+ GET /stats 200 in 261ms
+ ✓ Compiled in 186ms (2332 modules)
+ GET /stats 200 in 352ms
+ ✓ Compiled in 159ms (2332 modules)
+ GET /stats 200 in 264ms
+ ✓ Compiled in 154ms (2332 modules)
+ GET /stats 200 in 193ms
+ ✓ Compiled in 150ms (2332 modules)
+ GET /stats 200 in 305ms
+ GET /stats 200 in 512ms
+ ✓ Compiled in 415ms (2332 modules)
+ GET /stats 200 in 344ms
+ ✓ Compiled in 429ms (2332 modules)
+ GET /stats 200 in 282ms
+ GET /experiments/a7df2093-a7fe-4e06-b2f6-67395fd04ba8?from=stats 200 in 99ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots in 257ms (1517 modules)
+ GET /api/experiments/6027020925140992/screenshots 200 in 1071ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots/[fileId] in 96ms (1519 modules)
+ GET /api/experiments/6027020925140992/screenshots/1Z5wGTDdZvfsbbFNUCNt-M8UAyi0v-ESb 200 in 1469ms
+ GET /api/experiments/6027020925140992/screenshots/1faGhG4tf6vnmvpo6AHS1ILmqdLC1fyTF 200 in 1527ms
+ GET /stats 200 in 436ms
+ ✓ Compiled in 449ms (2332 modules)
+ GET /stats 200 in 347ms
+ ✓ Compiled in 188ms (2332 modules)
+ GET /stats 200 in 204ms
+ ✓ Compiled in 191ms (2332 modules)
+ GET /stats 200 in 192ms
+ ✓ Compiled in 201ms (2332 modules)
+ GET /stats 200 in 227ms
+ ✓ Compiled in 173ms (2332 modules)
+ GET /stats 200 in 193ms
+ ✓ Compiled in 193ms (2332 modules)
+ GET /stats 200 in 185ms
+ GET /stats 200 in 535ms
+ ✓ Compiled in 603ms (2332 modules)
+ GET /stats 200 in 684ms
+ GET /stats 200 in 262ms
+ ✓ Compiled in 210ms (2332 modules)
+ GET /stats 200 in 173ms
+ GET /experiments/a7df2093-a7fe-4e06-b2f6-67395fd04ba8?from=stats 200 in 74ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots in 270ms (1517 modules)
+ GET /api/experiments/6027020925140992/screenshots 200 in 1017ms
+ GET /stats 200 in 392ms
+ ✓ Compiled in 368ms (2332 modules)
+ GET /stats 200 in 344ms
+ GET /stats 200 in 328ms
+ ✓ Compiled in 167ms (2332 modules)
+ GET /stats 200 in 255ms
+ GET /stats 200 in 285ms
+ ✓ Compiled in 254ms (2332 modules)
+ GET /stats 200 in 266ms
+ GET /stats 200 in 220ms
+ GET /stats 200 in 433ms
+ ✓ Compiled in 171ms (2332 modules)
+ GET /stats 200 in 657ms
+ ✓ Compiled in 158ms (2332 modules)
+ GET /stats 200 in 203ms
+ GET /stats 200 in 629ms
+ GET /stats 200 in 178ms
+ GET /stats 200 in 255ms
+ ✓ Compiled in 391ms (2332 modules)
+ GET /stats 200 in 332ms
+ ✓ Compiled in 182ms (2332 modules)
+ GET /stats 200 in 257ms
+ ✓ Compiled in 355ms (2332 modules)
+ GET /stats 200 in 265ms
+ GET /stats 200 in 337ms
+ ✓ Compiled in 499ms (2332 modules)
+ GET /stats 200 in 265ms
+ ✓ Compiled in 416ms (2318 modules)
+ GET /stats 200 in 254ms
+ GET /experiments/56d016e1-28c5-4d81-8e2b-b0946e8c802b?from=stats 200 in 843ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots in 272ms (1517 modules)
+ GET /api/experiments/6306957431144448/screenshots 401 in 816ms
+ GET /api/experiments/6306957431144448/screenshots 401 in 92ms
+ GET /stats 200 in 663ms
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 73ms
+ GET /api/experiments/5656795012661248/screenshots 401 in 103ms
+ GET /api/experiments/5656795012661248/screenshots 401 in 67ms
+ ✓ Compiled in 373ms (2351 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 207ms
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 198ms
+ GET /api/experiments/5656795012661248/screenshots 401 in 101ms
+ ✓ Compiled in 412ms (2332 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 471ms
+ ✓ Compiled in 509ms (2332 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 578ms
+ ✓ Compiled in 156ms (2332 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 173ms
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 324ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots in 109ms (1517 modules)
+ GET /api/experiments/5656795012661248/screenshots 401 in 341ms
+ ✓ Compiled in 228ms (2351 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 202ms
+ ✓ Compiled in 164ms (2351 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 249ms
+ ✓ Compiled in 153ms (2351 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 309ms
+ ○ Compiling /admin ...
+ ✓ Compiled /admin in 622ms (2320 modules)
+ GET /admin 200 in 816ms
+ ✓ Compiled /api/experiments/[experimentId]/screenshots in 124ms (1519 modules)
+ GET /api/experiments/5656795012661248/screenshots 401 in 381ms
+ GET /api/experiments/5656795012661248/screenshots 401 in 44ms
+ ✓ Compiled in 392ms (834 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 612ms
+ ✓ Compiled in 79ms (834 modules)
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 200 in 145ms
+ ✓ Compiled in 198ms (834 modules)
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json',
+  page: '/experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4'
+}
+ ✓ Compiled /_error in 426ms (2413 modules)
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/webpack-runtime.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/pages/_document.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/require.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/load-components.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/utils.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-server.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Array.map (<anonymous>) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json',
+  page: '/experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/webpack-runtime.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/pages/_document.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/require.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/load-components.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/utils.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-server.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Array.map (<anonymous>) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'
+}
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 500 in 1222ms
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 500 in 20ms
+ ⨯ [Error: ENOENT: no such file or directory, open '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json',
+  page: '/experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/webpack-runtime.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/pages/_document.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/require.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/load-components.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/utils.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-server.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Array.map (<anonymous>) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json',
+  page: '/experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4'
+}
+ ⨯ Error: Cannot find module './611.js'
+Require stack:
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/webpack-runtime.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/pages/_document.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/require.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/load-components.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/utils.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/options.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/swc/index.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/parse-module.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/analysis/get-page-static-info.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/router-server.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/lib/start-server.js
+    at Array.map (<anonymous>) {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+[Error: ENOENT: no such file or directory, open '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/routes-manifest.json'
+}
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 500 in 312ms
+ GET /experiments/fa403467-8ce0-49c4-9d2d-3bb2ca6721c4?from=stats 500 in 12ms
+ ⨯ Failed to generate static paths for /experiments/[id]:
+[Error: Cannot find module './vendor-chunks/jose.js'
+Require stack:
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/webpack-runtime.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/server/app/experiments/[id]/page.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/require.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/load-components.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/build/utils.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/server/dev/static-paths-worker.js
+- /Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/node_modules/next/dist/compiled/jest-worker/processChild.js] {
+  type: 'Error',
+  code: 'MODULE_NOT_FOUND',
+  requireStack: [Array]
+}
+ ✓ Compiled in 75ms (835 modules)
+ ✓ Compiled in 110ms (835 modules)
+ ✓ Compiled in 67ms (835 modules)
+ ✓ Compiled in 86ms (835 modules)
+ ✓ Compiled in 70ms (835 modules)
+ ✓ Compiled in 93ms (834 modules)
+ ✓ Compiled in 514ms (2334 modules)
+ ✓ Compiled in 354ms (2334 modules)
+ ✓ Compiled in 419ms (2334 modules)
+ ✓ Compiled in 277ms (2334 modules)
+ ✓ Compiled in 188ms (2334 modules)
+ ✓ Compiled in 179ms (2334 modules)
+ ✓ Compiled in 369ms (2334 modules)
+ ✓ Compiled in 671ms (2334 modules)
+   Reload env: .env.local
+ ✓ Compiled in 788ms (2533 modules)
+   Reload env: .env.local
+ ✓ Compiled in 300ms (2533 modules)
+ ✓ Compiled in 563ms (2334 modules)
+ ✓ Compiled in 151ms (834 modules)
+ ✓ Compiled in 90ms (834 modules)
+   Reload env: .env.local
+ ✓ Compiled in 705ms (2533 modules)
+   Reload env: .env.local
+ ✓ Compiled in 281ms (2533 modules)
+   Reload env: .env.local
+ ✓ Compiled in 222ms (2533 modules)
+ ✓ Compiled in 180ms (834 modules)
+   Reload env: .env.local
+ ✓ Compiled in 316ms (2533 modules)
+ ✓ Compiled in 123ms (834 modules)
+ ✓ Compiled in 86ms (834 modules)
+ ✓ Compiled in 81ms (834 modules)
+ ✓ Compiled in 136ms (834 modules)
+ ✓ Compiled in 81ms (834 modules)
+ ✓ Compiled in 229ms (834 modules)
+ ✓ Compiled in 501ms (834 modules)
+ ✓ Compiled in 954ms (2334 modules)
+ ✓ Compiled in 217ms (2334 modules)
+ ✓ Compiled in 921ms (2334 modules)
+ ✓ Compiled in 1129ms (2375 modules)
+[Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/3.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/3.pack.gz'
+}
+ ⨯ unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/3.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/3.pack.gz'
+}
+ ⨯ unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/3.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/3.pack.gz'
+}
+[Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/7.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/7.pack.gz'
+}
+ ⨯ unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/7.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/7.pack.gz'
+}
+ ⨯ unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/7.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/7.pack.gz'
+}
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/server-development/3.pack.gz'
+ ✓ Compiled in 620ms (2375 modules)
+ ✓ Compiled in 591ms (2375 modules)
+ ✓ Compiled in 705ms (2375 modules)
+ ✓ Compiled in 719ms (2375 modules)
+ ✓ Compiled in 854ms (2375 modules)
+ ✓ Compiled in 720ms (2375 modules)
+ ✓ Compiled in 188ms (2375 modules)
+ ✓ Compiled in 337ms (2375 modules)
+ ✓ Compiled in 175ms (2375 modules)
+ ✓ Compiled in 166ms (2375 modules)
+ ✓ Compiled in 203ms (2375 modules)
+ ✓ Compiled in 677ms (2375 modules)
+[Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+}
+ ⨯ unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+}
+ ⨯ unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+}
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+ ✓ Compiled in 687ms (2375 modules)
+ ✓ Compiled in 151ms (848 modules)
+ ✓ Compiled in 220ms (2588 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/4.pack.gz'
+ ✓ Compiled in 627ms (2375 modules)
+ ✓ Compiled in 201ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 760ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 381ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 681ms (2375 modules)
+ ✓ Compiled in 185ms (2375 modules)
+ ✓ Compiled in 176ms (2375 modules)
+ ✓ Compiled in 210ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 656ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 661ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 830ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 375ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ⨯ ./app/stats/page.tsx
+Module parse failed: Identifier 'winnersByCount' has already been declared (223:10)
+|             r._count.id
+|         ]).sort((a, b)=>b[1] - a[1]).slice(0, 12);
+>     const winnersByCount = winnerCountRows.map((r)=>[
+|             normalizeWinner(r.winningVar),
+|             r._count.id
+
+Import trace for requested module:
+./app/stats/page.tsx
+[Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+}
+ ⨯ unhandledRejection: [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+}
+ ⨯ unhandledRejection:  [Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'] {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'stat',
+  path: '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+}
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+ ✓ Compiled in 768ms (2361 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/1.pack.gz'
+ ✓ Compiled in 365ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 509ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 728ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 392ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 626ms (2375 modules)
+ ✓ Compiled in 205ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 764ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 705ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 806ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 572ms (2375 modules)
+ ✓ Compiled in 194ms (2375 modules)
+ ✓ Compiled in 243ms (2375 modules)
+ ✓ Compiled in 213ms (2375 modules)
+ ✓ Compiled in 218ms (2375 modules)
+ ✓ Compiled in 281ms (2375 modules)
+ ✓ Compiled in 227ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 381ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 652ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 665ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 646ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 625ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+ ✓ Compiled in 378ms (2375 modules)
+<w> [webpack.cache.PackFileCacheStrategy] Caching failed for pack: Error: ENOENT: no such file or directory, stat '/Users/nicolalazzari/Workspace/MVF/cro-analyst-v3/frontend/.next/cache/webpack/client-development/0.pack.gz'
+[?25h

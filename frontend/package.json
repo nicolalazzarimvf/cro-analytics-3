@@ -1,0 +1,49 @@
+{
+  "name": "cro-analyst-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "prebuild": "prisma generate",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "ai:test": "tsx scripts/run-ai-queries.ts",
+    "ai:embed": "tsx scripts/embed-experiments.ts --limit 50",
+    "ai:embed:all": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/embed-experiments.ts --limit 0",
+    "neo4j:test": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/test-neo4j.ts",
+    "neo4j:sync": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/sync-neo4j.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.1.0",
+    "@prisma/client": "^7.1.0",
+    "csv-parse": "^6.1.0",
+    "neo4j-driver": "^5.23.0",
+    "next": "^15.0.0",
+    "next-auth": "^4.24.13",
+    "pg": "^8.16.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-force-graph-3d": "^1.29.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "dotenv": "^16.6.1",
+    "prisma": "^7.1.0",
+    "tailwindcss": "^4.1.17",
+    "tsx": "^4.20.0",
+    "typescript": "^5.6.0"
+  }
+}

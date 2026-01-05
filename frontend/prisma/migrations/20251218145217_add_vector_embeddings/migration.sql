@@ -1,0 +1,1 @@
+-- This migration intentionally left blank (no-op to avoid dropping embedding).

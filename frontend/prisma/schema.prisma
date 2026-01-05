@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Experiment {
+  id            String    @id @default(uuid())
+  experimentId  String    @unique
+  testName      String
+  vertical      String?
+  geo           String?
+  launchedBy    String?
+  userJourneyType String?
+  targetMetric  String?
+  brand         String?
+  monetisationMethod String?
+  promoted      Boolean?
+  variationsCount Int?
+  baseUrl       String?
+  audience      String?
+  mobileTrafficPct Float?
+  visitsControl   Float?
+  visitsVar1      Float?
+  visitsVar2      Float?
+  visitsVar3      Float?
+  totalVisits     Float?
+  primaryMetricName String?
+  primaryControlConv Float?
+  primaryVar1Conv Float?
+  primaryVar2Conv Float?
+  primaryVar3Conv Float?
+  primarySignificance1 Float?
+  secondaryMetricName String?
+  secondaryControlConv Float?
+  secondaryVar1Conv Float?
+  secondaryVar2Conv Float?
+  secondaryVar3Conv Float?
+  tertiaryMetricName String?
+  tertiaryControlConv Float?
+  tertiaryVar1Conv Float?
+  tertiaryVar2Conv Float?
+  tertiaryVar3Conv Float?
+  tradingHub    String?
+  masterLever   String?
+  lever         String?
+  crChangeV1    Float?
+  crChangeV2    Float?
+  crChangeV3    Float?
+  rpvChangeV1   Float?
+  rpvChangeV2   Float?
+  rpvChangeV3   Float?
+  elementChanged String?
+  changeType     String?
+  observedRevenueImpact Float?
+  dateLaunched  DateTime?
+  dateConcluded DateTime?
+  winningVar    String?
+  monthlyExtrap Float?
+  optimizelyLink String?
+  hypothesis    String?
+  lessonLearned String?
+  embedding     Unsupported("vector")?
+  screenshotDriveFileId String?
+  screenshotWebUrl      String?
+  screenshotThumbnailUrl String?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Person {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?  @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String   @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
