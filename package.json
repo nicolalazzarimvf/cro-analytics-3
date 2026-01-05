@@ -5,7 +5,7 @@
     "node": "24.x"
   },
   "scripts": {
-    "vercel-build": "cd frontend && npm install && npm run build"
+    "vercel-build": "cd frontend && npm ci --include=dev && npm run build"
   },
   "dependencies": {
     "next": "15.5.9"
