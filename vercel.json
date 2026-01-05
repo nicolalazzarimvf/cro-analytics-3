@@ -2,7 +2,7 @@
   "installCommand": "cd frontend && npm ci --include=dev",
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "frontend/.next",
-  "framework": "nextjs",
+  "framework": null,
   "crons": [
     {
       "path": "/api/import/auto",
