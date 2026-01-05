@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run vercel-build",
+  "crons": [
+    {
+      "path": "/api/import/auto",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

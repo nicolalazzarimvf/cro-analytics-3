@@ -1,0 +1,13 @@
+{
+  "name": "cro-analytics-3-root",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "vercel-build": "cd frontend && npm install && npm run build"
+  },
+  "dependencies": {
+    "next": "15.5.9"
+  }
+}
