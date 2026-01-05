@@ -127,7 +127,9 @@ function normalizeTableName(sql: string) {
     changetype: `"changeType"`,
     observedrevenueimpact: `"observedRevenueImpact"`,
     optimizelylink: `"optimizelyLink"`,
-    lessonlearned: `"lessonLearned"`
+    lessonlearned: `"lessonLearned"`,
+    ownername: `"launchedBy"`,
+    owner: `"launchedBy"`
   };
   for (const [raw, quoted] of Object.entries(columnMap)) {
     result = result.replace(new RegExp(`(?<!")\\b${raw}\\b(?!")`, "gi"), quoted);
@@ -174,6 +176,36 @@ function sanitizeSql(sql: string) {
   return s;
 }
 
+// If the question includes "by/from <name>" (or the SQL already has a LIKE '%name%'), enforce a launchedBy filter in the SQL.
+function enforceLaunchedBy(question: string, sql: string) {
+  const nameMatch =
+    question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i) ||
+    sql.match(/like\s*'%([^%']+)%'/i);
+  const name = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
+  if (!name) return sql;
+  const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
+  // If the SQL is already filtering on launchedBy, leave it.
+  if (/\b"launchedBy"\b/i.test(sql)) return sql;
+  // Replace naive LIKE on testName/owner fields with launchedBy
+  sql = sql.replace(/\b"testName"\s+LIKE\s+'%[^%']+%'/i, condition);
+  sql = sql.replace(/\bownerName\b/gi, `"launchedBy"`);
+  sql = sql.replace(/\bowner\b/gi, `"launchedBy"`);
+  const trimmed = sql.replace(/;+\s*$/, "").trim();
+  // If there is a LIMIT, insert the condition before it.
+  const limitMatch = trimmed.match(/\blimit\s+\d+/i);
+  if (limitMatch) {
+    const [limitStr] = limitMatch;
+    const beforeLimit = trimmed.slice(0, limitMatch.index).trim();
+    // If there's already a WHERE, append with AND, else add WHERE.
+    const hasWhere = /\bwhere\b/i.test(beforeLimit);
+    const newBeforeLimit = hasWhere ? `${beforeLimit} AND ${condition}` : `${beforeLimit} WHERE ${condition}`;
+    return `${newBeforeLimit} ${limitStr}`;
+  }
+  // No limit: append condition with WHERE/AND.
+  const hasWhere = /\bwhere\b/i.test(trimmed);
+  return hasWhere ? `${trimmed} AND ${condition}` : `${trimmed} WHERE ${condition}`;
+}
+
 function buildSqlPrompt(question: string) {
   return [
     {
@@ -185,6 +217,7 @@ Rules:
 - Default to the last 12 months if no date range given.
 - Always include a LIMIT <= 500.
 - Prefer dateConcluded; if missing, fall back to dateLaunched.
+- If the question is about a person/owner (e.g., "by <name>", "from <name>"), filter on launchedBy using ILIKE '%name%'.
 - Use ISO dates (YYYY-MM-DD).
 - When using relative ranges, use Postgres interval syntax: e.g., CURRENT_DATE - INTERVAL '6 months'.
 - When filtering by month, use an inclusive lower bound and exclusive upper bound: e.g., >= '2025-10-01' AND < '2025-11-01'.
@@ -275,7 +308,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const safeSql = sanitizeSql(parsedSql.sql);
+    const sqlWithOwner = enforceLaunchedBy(question, parsedSql.sql);
+    const safeSql = sanitizeSql(sqlWithOwner);
 
     // Step 2: execute
     const rawRows = (await prisma.$queryRawUnsafe(safeSql)) as unknown[];

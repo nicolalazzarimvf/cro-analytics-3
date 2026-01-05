@@ -352,18 +352,103 @@ export default function AskAI() {
 
   const renderTable = (res: AskResult) => {
     if (!res?.rows?.length) return null;
-    const cols = Object.keys(res.rows[0] ?? {}).filter((c) => c !== "id"); // hide uuid column
+    // If rows contain a Neo4j payload (identity/labels/properties), flatten to properties for display.
+    const normalizedRows = res.rows.map((row) => {
+      if (row && typeof row === "object" && "properties" in row && row.properties && typeof row.properties === "object") {
+        return row.properties as Record<string, unknown>;
+      }
+      return row;
+    });
+    const cols = Object.keys(normalizedRows[0] ?? {}).filter((c) => c !== "id"); // hide uuid column
     const pageSize = 25;
-    const totalPages = Math.max(1, Math.ceil(res.rows.length / pageSize));
+    const totalPages = Math.max(1, Math.ceil(normalizedRows.length / pageSize));
     const currentPage = Math.min(tablePage, totalPages);
     const start = (currentPage - 1) * pageSize;
     const end = start + pageSize;
-    const pageRows = res.rows.slice(start, end);
+    const pageRows = normalizedRows.slice(start, end);
+
+    const formatVal = (val: any) => {
+      if (val === null || val === undefined) return "—";
+      if (Array.isArray(val)) {
+        if (!val.length) return "[]";
+        return val
+          .map((item) => (item && typeof item === "object" ? JSON.stringify(item) : String(item)))
+          .join(", ");
+      }
+      if (val instanceof Date) return val.toISOString();
+      if (typeof val === "object") return JSON.stringify(val);
+      return String(val);
+    };
 
     const excerpt = (text: string, max = 120) => {
       if (text.length <= max) return text;
       return text.slice(0, max) + "…";
     };
+
+    const summaryRows = normalizedRows.filter((r) => r && typeof r === "object" && "experimentId" in r);
+
+    // If we have experiment summaries, show only the recap table (avoid duplicate detail table).
+    if (summaryRows.length) {
+      return (
+        <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
+          <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
+            <div className="text-xs font-semibold text-gray-700">Summary</div>
+            <div className="mt-2 overflow-x-auto">
+              <table className="min-w-full border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-gray-700">
+                    <th className="px-2 py-1 font-medium">Experiment</th>
+                    <th className="px-2 py-1 font-medium">Title</th>
+                    <th className="px-2 py-1 font-medium">Winner</th>
+                    <th className="px-2 py-1 font-medium">Concluded</th>
+                    <th className="px-2 py-1 font-medium">Optimizely</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summaryRows.slice(0, 10).map((row, idx) => {
+                    const expId = row.experimentId as string | undefined;
+                    const uuid = (row as any).id as string | undefined;
+                    const optimizely = (row as any).optimizelyLink as string | undefined;
+                    return (
+                      <tr key={`summary-${idx}`} className="border-b border-gray-100 text-gray-700">
+                        <td className="px-2 py-1">
+                          {expId ? (
+                            <button
+                              type="button"
+                              onClick={() => uuid && setModalId(uuid)}
+                              className="text-brand-700 hover:underline"
+                              disabled={!uuid}
+                            >
+                              {expId}
+                            </button>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="px-2 py-1">{row.testName ? formatVal(row.testName) : "—"}</td>
+                        <td className="px-2 py-1">{row.winningVar ? formatVal(row.winningVar) : "—"}</td>
+                        <td className="px-2 py-1">
+                          {row.dateConcluded ? formatVal(row.dateConcluded).slice(0, 10) : "—"}
+                        </td>
+                        <td className="px-2 py-1">
+                          {optimizely ? (
+                            <a href={optimizely} target="_blank" rel="noreferrer" className="text-brand-700 hover:underline">
+                              Open
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
@@ -395,17 +480,17 @@ export default function AskAI() {
                             onClick={() => setModalId(targetId)}
                             className="text-brand-700 hover:underline"
                           >
-                            {String(val)}
+                            {formatVal(val)}
                           </button>
                         ) : (
-                          String(val)
+                          formatVal(val)
                         );
                       }
                       // Shorten long text fields for readability
                       if (c === "hypothesis" || c === "lessonLearned") {
-                        return excerpt(String(val));
+                        return excerpt(formatVal(val));
                       }
-                      return String(val);
+                      return formatVal(val);
                     })()}
                   </td>
                 ))}
@@ -414,11 +499,11 @@ export default function AskAI() {
           </tbody>
         </table>
         <div className="bg-gray-50 px-4 py-2 text-xs text-gray-600">
-          Showing {res.rows.length} of {res.rowCount} rows {res.truncated ? "(truncated)" : ""}
+          Showing {normalizedRows.length} of {res.rowCount} rows {res.truncated ? "(truncated)" : ""}
         </div>
             <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-600">
               <span>
-            Page {currentPage} of {totalPages} — showing {pageRows.length} of {res.rows.length}
+            Page {currentPage} of {totalPages} — showing {pageRows.length} of {normalizedRows.length}
               </span>
               <div className="flex items-center gap-2">
                 <button
