@@ -38,6 +38,7 @@ export default async function ExperimentDetail({
     select: {
       experimentId: true,
       testName: true,
+      launchedBy: true,
       vertical: true,
       geo: true,
       winningVar: true,
@@ -233,6 +234,12 @@ export default async function ExperimentDetail({
       ) : null}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
+          <div className="text-sm text-gray-600">Launched by</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900">
+            {experiment.launchedBy?.trim() || "—"}
+          </div>
+        </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
           <div className="text-sm text-gray-600">Vertical</div>
           <div className="mt-1 text-lg font-semibold text-gray-900">
