@@ -401,6 +401,38 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
             }
           }
 
+          // If we still have fewer than 6, top up with other experiments sharing change types.
+          if (closest.length < 6) {
+            const excludeIds = closest
+              .map((n) => normalizeExpId(n?.properties?.experimentId as string | undefined))
+              .filter(Boolean);
+            excludeIds.push(normalizeExpId(topWinnerExperiment.experimentId));
+            const toTake = Math.max(0, 6 - closest.length);
+            const moreSimilar = await session.run(
+              `
+              MATCH (e:Experiment {experimentId: $experimentId})
+              OPTIONAL MATCH (e)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)<-[:HAS_CHANGE_TYPE]-(other:Experiment)
+              WHERE other <> e AND other.experimentId IS NOT NULL AND NOT other.experimentId IN $exclude
+              WITH DISTINCT other
+              ORDER BY coalesce(other.monthlyExtrap, 0) DESC
+              LIMIT $limit
+              RETURN collect(other) AS extra
+              `,
+              { experimentId: topWinnerExperiment.experimentId, exclude: excludeIds, limit: toTake }
+            );
+            if (moreSimilar.records.length) {
+              const extra = (moreSimilar.records[0].get("extra") as any[]) ?? [];
+              const merged = [...closest, ...extra];
+              const seen = new Set<string>();
+              closest = merged.filter((n) => {
+                const id = normalizeExpId(n?.properties?.experimentId as string | undefined);
+                if (!id || seen.has(id)) return false;
+                seen.add(id);
+                return true;
+              });
+            }
+          }
+
           const closestExperimentIds = closest
             .map((n) => normalizeExpId(n?.properties?.experimentId as string | undefined))
             .filter(Boolean);
