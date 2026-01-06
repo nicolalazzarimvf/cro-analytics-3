@@ -41,6 +41,7 @@ export default async function ExperimentDetail({
       launchedBy: true,
       vertical: true,
       geo: true,
+      optimizelyLink: true,
       winningVar: true,
       monthlyExtrap: true,
       dateLaunched: true,
@@ -223,6 +224,18 @@ export default async function ExperimentDetail({
               {experiment.experimentId || "—"}
             </h1>
             <p className="mt-1 text-gray-700">{experiment.testName || "Untitled test"}</p>
+            {experiment.optimizelyLink ? (
+              <p className="mt-2 text-sm">
+                <a
+                  href={experiment.optimizelyLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-brand-700 hover:underline"
+                >
+                  View in Optimizely
+                </a>
+              </p>
+            ) : null}
           </div>
           <Link
             href={backHref}
