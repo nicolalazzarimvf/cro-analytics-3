@@ -20,17 +20,14 @@ export default async function Header() {
             />
             <span className="text-base font-semibold leading-tight">MVF CRO Analyst</span>
           </Link>
-          <Link href="/experiments" className="hover:text-gray-900">
-            Experiments
-          </Link>
           <Link href="/stats" className="hover:text-gray-900">
             Stats
           </Link>
+          <Link href="/experiments" className="hover:text-gray-900">
+            Experiments
+          </Link>
           <Link href="/how-it-works" className="hover:text-gray-900">
             How it works
-          </Link>
-          <Link href="/admin" className="hover:text-gray-900">
-            Admin
           </Link>
         </nav>
 
