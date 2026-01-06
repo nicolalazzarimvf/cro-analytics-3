@@ -1,6 +1,6 @@
 {
-  "installCommand": "cd frontend && npm ci --include=dev",
-  "buildCommand": "cd frontend && npm run build",
+  "installCommand": "npm ci --include=dev",
+  "buildCommand": "npm run build",
   "crons": [
     { "path": "/api/import/auto", "schedule": "0 3 * * *" }
   ]
