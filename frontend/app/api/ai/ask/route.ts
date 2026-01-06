@@ -154,49 +154,30 @@ function enforceLaunchedBy(question: string, sql: string) {
   const concludeCondition = `"dateConcluded" IS NOT NULL`;
   const trimmed = sql.replace(/;+\s*$/, "").trim();
 
-  let base = trimmed.replace(/\bownerName\b/gi, `"launchedBy"`).replace(/\bowner\b/gi, `"launchedBy"`);
-  base = base.replace(/\b"testName"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) =>
-    andWord ? "" : ""
-  );
-  base = base.replace(/\b"vertical"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) =>
-    andWord ? "" : ""
-  );
-  // Drop any remaining LIKE '%...%' filters (to avoid elementChanged/changeType name matches)
-  base = base.replace(/\b"[A-Za-z0-9_]+"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND|OR)?/gi, (_m, conj) =>
-    conj ? "" : ""
-  );
-  // Clean up dangling boolean operators
-  base = base.replace(/\bWHERE\s*AND\s*/gi, "WHERE ");
-  base = base.replace(/\sAND\s*(ORDER BY|LIMIT)\b/gi, " $1");
-  base = base.replace(/\sAND\s*$/i, "");
-  base = base.replace(/\bWHERE\s*(ORDER BY|LIMIT)\b/gi, "$1");
-
-  if (/\b"launchedBy"\b/i.test(base)) return base;
-
-  // Separate tail clauses (ORDER BY / LIMIT) so we can insert WHERE before them.
-  let tail = "";
-  let before = base;
-  const tailMatch = base.match(/\b(order\s+by[\s\S]*|limit\s+\d[\s\S]*)$/i);
-  if (tailMatch && typeof tailMatch.index === "number") {
-    tail = tailMatch[0].trim();
-    before = base.slice(0, tailMatch.index).trim();
+  // Strip trailing LIMIT then ORDER BY to preserve them.
+  let working = trimmed;
+  let limitClause = "";
+  const limitMatch = working.match(/\blimit\s+\d+\s*$/i);
+  if (limitMatch && typeof limitMatch.index === "number") {
+    limitClause = limitMatch[0].trim();
+    working = working.slice(0, limitMatch.index).trim();
   }
 
-  before = before
-    .replace(/\bWHERE\s*AND\s*/gi, "WHERE ")
-    .replace(/\bWHERE\s*$/gi, "")
-    .replace(/\bAND\s*$/gi, "")
-    .trim();
-
-  const hasWhere = /\bwhere\b/i.test(before);
-  let withFilter = hasWhere ? `${before} AND ${condition}` : `${before} WHERE ${condition}`;
-  if (!/\bdateConcluded\b/i.test(withFilter)) {
-    const hasWhereNow = /\bwhere\b/i.test(withFilter);
-    withFilter = hasWhereNow
-      ? `${withFilter} AND ${concludeCondition}`
-      : `${withFilter} WHERE ${concludeCondition}`;
+  let orderClause = "";
+  const orderMatch = working.match(/\border\s+by[\s\S]*$/i);
+  if (orderMatch && typeof orderMatch.index === "number") {
+    orderClause = orderMatch[0].trim();
+    working = working.slice(0, orderMatch.index).trim();
   }
-  return tail ? `${withFilter} ${tail}` : withFilter;
+
+  // Remove any existing WHERE and rebuild filters.
+  const whereIdx = working.search(/\bwhere\b/i);
+  const head = whereIdx >= 0 ? working.slice(0, whereIdx).trim() : working;
+
+  let rebuilt = `${head} WHERE ${condition} AND ${concludeCondition}`;
+  if (orderClause) rebuilt += ` ${orderClause}`;
+  if (limitClause) rebuilt += ` ${limitClause}`;
+  return rebuilt;
 }
 
 function sanitizeCypher(query: string) {
