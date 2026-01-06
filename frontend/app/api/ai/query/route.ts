@@ -178,32 +178,40 @@ function sanitizeSql(sql: string) {
 
 // If the question includes "by/from <name>" (or the SQL already has a LIKE '%name%'), enforce a launchedBy filter in the SQL.
 function enforceLaunchedBy(question: string, sql: string) {
-  const nameMatch =
-    question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i) ||
-    sql.match(/like\s*'%([^%']+)%'/i);
+  const nameMatch = question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i) || sql.match(/like\s*'%([^%']+)%'/i);
   const name = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
   if (!name) return sql;
   const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
-  // If the SQL is already filtering on launchedBy, leave it.
-  if (/\b"launchedBy"\b/i.test(sql)) return sql;
-  // Replace naive LIKE on testName/owner fields with launchedBy
-  sql = sql.replace(/\b"testName"\s+LIKE\s+'%[^%']+%'/i, condition);
-  sql = sql.replace(/\bownerName\b/gi, `"launchedBy"`);
-  sql = sql.replace(/\bowner\b/gi, `"launchedBy"`);
   const trimmed = sql.replace(/;+\s*$/, "").trim();
-  // If there is a LIMIT, insert the condition before it.
-  const limitMatch = trimmed.match(/\blimit\s+\d+/i);
-  if (limitMatch) {
-    const [limitStr] = limitMatch;
-    const beforeLimit = trimmed.slice(0, limitMatch.index).trim();
-    // If there's already a WHERE, append with AND, else add WHERE.
-    const hasWhere = /\bwhere\b/i.test(beforeLimit);
-    const newBeforeLimit = hasWhere ? `${beforeLimit} AND ${condition}` : `${beforeLimit} WHERE ${condition}`;
-    return `${newBeforeLimit} ${limitStr}`;
+
+  // Strip any existing ownerName/owner fields and remove testName LIKE/ILIKE filters
+  let base = trimmed.replace(/\bownerName\b/gi, `"launchedBy"`).replace(/\bowner\b/gi, `"launchedBy"`);
+  base = base.replace(/\b"testName"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) => (andWord ? "" : ""));
+  // Remove vertical LIKE filters that are clearly name searches
+  base = base.replace(/\b"vertical"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) => (andWord ? "" : ""));
+
+  // If there's already a launchedBy filter, leave as-is.
+  if (/\b"launchedBy"\b/i.test(base)) return base;
+
+  // Pull out LIMIT if present
+  let limitClause = "";
+  let before = base;
+  const limitMatch = base.match(/\blimit\s+\d+/i);
+  if (limitMatch && typeof limitMatch.index === "number") {
+    limitClause = limitMatch[0];
+    before = base.slice(0, limitMatch.index).trim();
+    const afterLimit = base.slice(limitMatch.index + limitClause.length).trim();
+    if (afterLimit) limitClause = `${limitClause} ${afterLimit}`;
   }
-  // No limit: append condition with WHERE/AND.
-  const hasWhere = /\bwhere\b/i.test(trimmed);
-  return hasWhere ? `${trimmed} AND ${condition}` : `${trimmed} WHERE ${condition}`;
+
+  // Clean up dangling WHERE/AND after removals
+  before = before.replace(/\bWHERE\s*AND\s*/gi, "WHERE ");
+  before = before.replace(/\bWHERE\s*$/gi, "").trim();
+  before = before.replace(/\bAND\s*$/gi, "").trim();
+
+  const hasWhere = /\bwhere\b/i.test(before);
+  const withFilter = hasWhere ? `${before} AND ${condition}` : `${before} WHERE ${condition}`;
+  return `${withFilter}${limitClause ? " " + limitClause : ""}`;
 }
 
 function buildSqlPrompt(question: string) {
