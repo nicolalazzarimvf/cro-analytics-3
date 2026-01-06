@@ -182,6 +182,7 @@ function enforceLaunchedBy(question: string, sql: string) {
   const name = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
   if (!name) return sql;
   const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
+  const concludeCondition = `"dateConcluded" IS NOT NULL`;
   const trimmed = sql.replace(/;+\s*$/, "").trim();
 
   // Strip any existing ownerName/owner fields and remove testName LIKE/ILIKE filters
@@ -210,7 +211,12 @@ function enforceLaunchedBy(question: string, sql: string) {
   before = before.replace(/\bAND\s*$/gi, "").trim();
 
   const hasWhere = /\bwhere\b/i.test(before);
-  const withFilter = hasWhere ? `${before} AND ${condition}` : `${before} WHERE ${condition}`;
+  let withFilter = hasWhere ? `${before} AND ${condition}` : `${before} WHERE ${condition}`;
+  // Always require concluded date for person queries.
+  if (!/\bdateConcluded\b/i.test(withFilter)) {
+    const hasWhereNow = /\bwhere\b/i.test(withFilter);
+    withFilter = hasWhereNow ? `${withFilter} AND ${concludeCondition}` : `${withFilter} WHERE ${concludeCondition}`;
+  }
   return `${withFilter}${limitClause ? " " + limitClause : ""}`;
 }
 

@@ -407,24 +407,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const chosen: "sql" | "graph" = mode === "auto" ? classifyMode(question) : (mode === "graph" ? "graph" : "sql");
+    // Hard override: in auto or sql mode we always run SQL only; never fall back to graph.
+    const chosen: "sql" | "graph" = mode === "graph" ? "graph" : "sql";
     let primaryResult: any;
-    let fallbackResult: any = null;
     let modeUsed: "sql" | "graph" = chosen;
 
     if (chosen === "sql") {
       primaryResult = await runSql(question);
-      if (!primaryResult.rows?.length) {
-        try {
-          fallbackResult = await runGraph(question);
-          if (fallbackResult.rows?.length) {
-            modeUsed = "graph";
-            primaryResult = fallbackResult;
-          }
-        } catch {
-          // ignore graph errors
-        }
-      }
     } else {
       // graph requested
       try {
@@ -452,7 +441,7 @@ export async function POST(request: NextRequest) {
       sql: primaryResult.sql,
       cypher: primaryResult.cypher,
       notes: primaryResult.notes,
-      fallbackTried: Boolean(fallbackResult)
+      fallbackTried: false
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
