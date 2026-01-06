@@ -233,22 +233,24 @@ export default async function ExperimentDetail({
         </div>
       ) : null}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+      <div className="mt-6 grid gap-4">
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
           <div className="text-sm text-gray-600">Launched by</div>
           <div className="mt-1 text-lg font-semibold text-gray-900">
             {experiment.launchedBy?.trim() || "—"}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-          <div className="text-sm text-gray-600">Vertical</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">
-            {experiment.vertical ?? "—"}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
+            <div className="text-sm text-gray-600">Vertical</div>
+            <div className="mt-1 text-lg font-semibold text-gray-900">
+              {experiment.vertical ?? "—"}
+            </div>
           </div>
-        </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-          <div className="text-sm text-gray-600">Geo</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">{experiment.geo ?? "—"}</div>
+          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
+            <div className="text-sm text-gray-600">Geo</div>
+            <div className="mt-1 text-lg font-semibold text-gray-900">{experiment.geo ?? "—"}</div>
+          </div>
         </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
           <div className="text-sm text-gray-600">Launched</div>
