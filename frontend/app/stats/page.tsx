@@ -407,7 +407,7 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
               .map((n) => normalizeExpId(n?.properties?.experimentId as string | undefined))
               .filter(Boolean);
             excludeIds.push(normalizeExpId(topWinnerExperiment.experimentId));
-            const toTake = Math.max(0, 6 - closest.length);
+            const toTake = Math.max(0, Math.floor(6 - closest.length));
             const moreSimilar = await session.run(
               `
               MATCH (e:Experiment {experimentId: $experimentId})
@@ -418,7 +418,11 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
               LIMIT $limit
               RETURN collect(other) AS extra
               `,
-              { experimentId: topWinnerExperiment.experimentId, exclude: excludeIds, limit: toTake }
+              {
+                experimentId: topWinnerExperiment.experimentId,
+                exclude: excludeIds,
+                limit: neo4j.int(toTake)
+              }
             );
             if (moreSimilar.records.length) {
               const extra = (moreSimilar.records[0].get("extra") as any[]) ?? [];
