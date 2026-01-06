@@ -148,9 +148,22 @@ function sanitizeSql(sql: string) {
 function enforceLaunchedBy(question: string, sql: string) {
   const nameMatch =
     question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i) || sql.match(/like\s*'%([^%']+)%'/i);
-  const name = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
-  const blockedNames = new Set(["monthly", "extrapolation", "top", "latest"]);
-  if (!name || blockedNames.has(name.toLowerCase())) return sql;
+  const rawName = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
+  const name = rawName ? rawName.replace(/["']/g, "") : null;
+  const blockedNames = new Set([
+    "monthly",
+    "extrapolation",
+    "top",
+    "latest",
+    "date",
+    "dateconcluded",
+    "datelaunched",
+    "concluded",
+    "launched"
+  ]);
+  if (!name) return sql;
+  const lower = name.toLowerCase();
+  if (blockedNames.has(lower) || lower.includes("date") || lower.includes("time")) return sql;
   if (!name) return sql;
   const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
   const concludeCondition = `"dateConcluded" IS NOT NULL`;
