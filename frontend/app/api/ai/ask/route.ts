@@ -161,6 +161,11 @@ function enforceLaunchedBy(question: string, sql: string) {
   base = base.replace(/\b"vertical"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) =>
     andWord ? "" : ""
   );
+  // Clean up dangling boolean operators
+  base = base.replace(/\bWHERE\s*AND\s*/gi, "WHERE ");
+  base = base.replace(/\bAND\s*(ORDER BY|LIMIT)\b/gi, "$1");
+  base = base.replace(/\sAND\s*$/i, "");
+  base = base.replace(/\bWHERE\s*(ORDER BY|LIMIT)\b/gi, "$1");
 
   if (/\b"launchedBy"\b/i.test(base)) return base;
 
