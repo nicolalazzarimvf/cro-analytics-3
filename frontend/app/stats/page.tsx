@@ -575,12 +575,8 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
               return n.type !== "tag" && !label.includes("tag");
             });
             const allowed = new Set(nodes.map((n) => n.id));
-            const filteredLinks = links.filter(
-              (l) => allowed.has(l.source as string) && allowed.has(l.target as string)
-            );
-            if (filteredLinks.length) {
-              neo4jGraphData = { nodes, links: filteredLinks };
-            }
+            const filteredLinks = links.filter((l) => allowed.has(l.source as string) && allowed.has(l.target as string));
+            neo4jGraphData = { nodes, links: filteredLinks };
           }
         }
       } finally {
