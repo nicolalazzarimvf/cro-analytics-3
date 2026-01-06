@@ -161,6 +161,10 @@ function enforceLaunchedBy(question: string, sql: string) {
   base = base.replace(/\b"vertical"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) =>
     andWord ? "" : ""
   );
+  // Drop any remaining LIKE '%...%' filters (to avoid elementChanged/changeType name matches)
+  base = base.replace(/\b"[A-Za-z0-9_]+"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND|OR)?/gi, (_m, conj) =>
+    conj ? "" : ""
+  );
   // Clean up dangling boolean operators
   base = base.replace(/\bWHERE\s*AND\s*/gi, "WHERE ");
   base = base.replace(/\sAND\s*(ORDER BY|LIMIT)\b/gi, " $1");
