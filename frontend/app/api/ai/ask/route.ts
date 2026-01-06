@@ -163,23 +163,26 @@ function enforceLaunchedBy(question: string, sql: string) {
   );
   // Clean up dangling boolean operators
   base = base.replace(/\bWHERE\s*AND\s*/gi, "WHERE ");
-  base = base.replace(/\bAND\s*(ORDER BY|LIMIT)\b/gi, "$1");
+  base = base.replace(/\sAND\s*(ORDER BY|LIMIT)\b/gi, " $1");
   base = base.replace(/\sAND\s*$/i, "");
   base = base.replace(/\bWHERE\s*(ORDER BY|LIMIT)\b/gi, "$1");
 
   if (/\b"launchedBy"\b/i.test(base)) return base;
 
-  let limitClause = "";
+  // Separate tail clauses (ORDER BY / LIMIT) so we can insert WHERE before them.
+  let tail = "";
   let before = base;
-  const limitMatch = base.match(/\blimit\s+\d+/i);
-  if (limitMatch && typeof limitMatch.index === "number") {
-    limitClause = limitMatch[0];
-    before = base.slice(0, limitMatch.index).trim();
-    const afterLimit = base.slice(limitMatch.index + limitClause.length).trim();
-    if (afterLimit) limitClause = `${limitClause} ${afterLimit}`;
+  const tailMatch = base.match(/\b(order\s+by[\s\S]*|limit\s+\d[\s\S]*)$/i);
+  if (tailMatch && typeof tailMatch.index === "number") {
+    tail = tailMatch[0].trim();
+    before = base.slice(0, tailMatch.index).trim();
   }
 
-  before = before.replace(/\bWHERE\s*AND\s*/gi, "WHERE ").replace(/\bWHERE\s*$/gi, "").replace(/\bAND\s*$/gi, "").trim();
+  before = before
+    .replace(/\bWHERE\s*AND\s*/gi, "WHERE ")
+    .replace(/\bWHERE\s*$/gi, "")
+    .replace(/\bAND\s*$/gi, "")
+    .trim();
 
   const hasWhere = /\bwhere\b/i.test(before);
   let withFilter = hasWhere ? `${before} AND ${condition}` : `${before} WHERE ${condition}`;
@@ -189,7 +192,7 @@ function enforceLaunchedBy(question: string, sql: string) {
       ? `${withFilter} AND ${concludeCondition}`
       : `${withFilter} WHERE ${concludeCondition}`;
   }
-  return `${withFilter}${limitClause ? " " + limitClause : ""}`;
+  return tail ? `${withFilter} ${tail}` : withFilter;
 }
 
 function sanitizeCypher(query: string) {
