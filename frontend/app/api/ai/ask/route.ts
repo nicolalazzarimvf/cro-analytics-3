@@ -144,6 +144,49 @@ function sanitizeSql(sql: string) {
   return s;
 }
 
+// Force owner/person filters to use launchedBy (with a concluded date) instead of arbitrary LIKEs.
+function enforceLaunchedBy(question: string, sql: string) {
+  const nameMatch =
+    question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i) || sql.match(/like\s*'%([^%']+)%'/i);
+  const name = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
+  if (!name) return sql;
+  const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
+  const concludeCondition = `"dateConcluded" IS NOT NULL`;
+  const trimmed = sql.replace(/;+\s*$/, "").trim();
+
+  let base = trimmed.replace(/\bownerName\b/gi, `"launchedBy"`).replace(/\bowner\b/gi, `"launchedBy"`);
+  base = base.replace(/\b"testName"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) =>
+    andWord ? "" : ""
+  );
+  base = base.replace(/\b"vertical"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) =>
+    andWord ? "" : ""
+  );
+
+  if (/\b"launchedBy"\b/i.test(base)) return base;
+
+  let limitClause = "";
+  let before = base;
+  const limitMatch = base.match(/\blimit\s+\d+/i);
+  if (limitMatch && typeof limitMatch.index === "number") {
+    limitClause = limitMatch[0];
+    before = base.slice(0, limitMatch.index).trim();
+    const afterLimit = base.slice(limitMatch.index + limitClause.length).trim();
+    if (afterLimit) limitClause = `${limitClause} ${afterLimit}`;
+  }
+
+  before = before.replace(/\bWHERE\s*AND\s*/gi, "WHERE ").replace(/\bWHERE\s*$/gi, "").replace(/\bAND\s*$/gi, "").trim();
+
+  const hasWhere = /\bwhere\b/i.test(before);
+  let withFilter = hasWhere ? `${before} AND ${condition}` : `${before} WHERE ${condition}`;
+  if (!/\bdateConcluded\b/i.test(withFilter)) {
+    const hasWhereNow = /\bwhere\b/i.test(withFilter);
+    withFilter = hasWhereNow
+      ? `${withFilter} AND ${concludeCondition}`
+      : `${withFilter} WHERE ${concludeCondition}`;
+  }
+  return `${withFilter}${limitClause ? " " + limitClause : ""}`;
+}
+
 function sanitizeCypher(query: string) {
   let cleaned = query.trim().replace(/```/g, "").replace(/^cypher\s*/i, "").trim();
   cleaned = cleaned.replace(/\bstddevp\b/gi, "stdevp").replace(/\bstddev\b/gi, "stdev");
@@ -219,7 +262,7 @@ Schema columns include experimentId, testName, vertical, geo, targetMetric, chan
   const sqlResponse = await callLLM({ messages: sqlPrompt });
   const cleaned = sqlResponse.replace(/[\u0000-\u001f]+/g, " ");
   const parsed = JSON.parse(cleaned) as { sql: string; notes?: string };
-  const finalSql = sanitizeSql(parsed.sql);
+  const finalSql = sanitizeSql(enforceLaunchedBy(question, parsed.sql));
   const rows = await prisma.$queryRawUnsafe(finalSql);
   const data = Array.isArray(rows) ? rows : [];
   const normalized = data.map((row) => {
