@@ -661,15 +661,6 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
           </div>
           <div className="mt-1 text-xs text-gray-500">used for breakdowns below</div>
         </div>
-        <div className="mt-4 flex items-center justify-end">
-          <PaginationControls
-            page={page}
-            totalPages={totalPages}
-            totalInMode={totalInMode}
-            hasPrev={hasPrev}
-            hasNext={hasNext}
-          />
-        </div>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
