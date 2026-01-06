@@ -412,9 +412,19 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
               `
               MATCH (e:Experiment {experimentId: $experimentId})
               OPTIONAL MATCH (e)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)<-[:HAS_CHANGE_TYPE]-(other:Experiment)
-              WHERE other <> e AND other.experimentId IS NOT NULL AND NOT other.experimentId IN $exclude
-              WITH DISTINCT other
-              ORDER BY coalesce(other.monthlyExtrap, 0) DESC
+              OPTIONAL MATCH (e)-[:CHANGED_ELEMENT]->(el:ElementChanged)<-[:CHANGED_ELEMENT]-(other)
+              OPTIONAL MATCH (e)-[:IN_VERTICAL]->(v:Vertical)<-[:IN_VERTICAL]-(other)
+              OPTIONAL MATCH (e)-[:IN_GEO]->(g:Geo)<-[:IN_GEO]-(other)
+              OPTIONAL MATCH (e)-[:FOR_BRAND]->(b:Brand)<-[:FOR_BRAND]-(other)
+              OPTIONAL MATCH (e)-[:TARGETS]->(tm:TargetMetric)<-[:TARGETS]-(other)
+              WITH e, other,
+                   (count(DISTINCT ct) + count(DISTINCT el) + count(DISTINCT v) + count(DISTINCT g) + count(DISTINCT b) + count(DISTINCT tm)) AS score
+              WHERE other <> e
+                AND other.experimentId IS NOT NULL
+                AND score > 0
+                AND NOT other.experimentId IN $exclude
+              WITH DISTINCT other, score
+              ORDER BY score DESC, coalesce(other.monthlyExtrap, 0) DESC
               LIMIT $limit
               RETURN collect(other) AS extra
               `,
