@@ -213,6 +213,7 @@ export default function Neo4jGraphCard({
             <li>How it’s fetched: we pull the winner’s Neo4j neighborhood (change type, element, vertical, geo, brand, metric) and attach similar experiments.</li>
             <li>Interact: hover for ID/title; click experiment nodes to open their detail pages.</li>
             <li>What to infer: clusters around the same blue/green nodes suggest repeatable winning changes; gray nodes near a vertical/geo hint where the pattern generalizes.</li>
+            <li className="font-semibold text-gray-900">If you don’t see gray nodes: this winner may have no SIMILAR_TO or matching change-type links in Neo4j yet.</li>
           </ul>
           )}
         </div>
