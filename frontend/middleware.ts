@@ -3,8 +3,10 @@ import { NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export const config = {
-  // Require auth for all pages + API routes, except NextAuth endpoints, AI internal endpoint, and Next.js assets.
-  matcher: ["/((?!api/auth|api/ai/query|api/ai/graph|api/ai/ask|login|_next/static|_next/image|favicon.ico).*)"]
+  // Require auth for all pages + API routes, except NextAuth endpoints, AI endpoints, health, and static assets.
+  matcher: [
+    "/((?!api/auth|api/ai/query|api/ai/graph|api/ai/ask|api/health|login|_next/static|_next/image|favicon.ico).*)"
+  ]
 };
 
 export default async function middleware(request: NextRequest) {
