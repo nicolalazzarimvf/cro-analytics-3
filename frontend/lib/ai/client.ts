@@ -11,6 +11,8 @@ const DEFAULT_MODEL =
 
 const ANTHROPIC_FALLBACK_MODEL = "claude-3-5-haiku-20241022";
 
+const DEFAULT_MAX_TOKENS = Number(process.env.AI_MAX_TOKENS ?? "2000");
+
 async function callAnthropic(model: string, messages: ChatMessage[]): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
@@ -28,7 +30,7 @@ async function callAnthropic(model: string, messages: ChatMessage[]): Promise<st
     body: JSON.stringify({
       model,
       system,
-      max_tokens: 1500,
+      max_tokens: DEFAULT_MAX_TOKENS,
       messages: userMessages
     })
   });
@@ -56,7 +58,7 @@ async function callOpenAI(model: string, messages: ChatMessage[]): Promise<strin
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: 1500,
+      max_tokens: DEFAULT_MAX_TOKENS,
       temperature: 0.2
     })
   });
