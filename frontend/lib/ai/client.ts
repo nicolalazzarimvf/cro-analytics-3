@@ -7,7 +7,7 @@ const DEFAULT_PROVIDER: Provider =
 
 const DEFAULT_MODEL =
   process.env.AI_MODEL ||
-  (DEFAULT_PROVIDER === "anthropic" ? "claude-3-5-sonnet-20241022" : "gpt-4o-mini-2024-07-18");
+  (DEFAULT_PROVIDER === "anthropic" ? "claude-sonnet-4-5-20250929" : "gpt-4o-mini-2024-07-18");
 
 const ANTHROPIC_FALLBACK_MODEL = "claude-3-5-haiku-20241022";
 
