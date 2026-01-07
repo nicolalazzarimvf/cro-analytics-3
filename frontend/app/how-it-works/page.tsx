@@ -9,53 +9,35 @@ export default function HowItWorksPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">How it works</p>
         <h1 className="text-3xl font-bold text-gray-900">Inside MVF CRO Analyst</h1>
         <p className="text-base text-gray-700">
-          A deep dive into how data flows from Google Sheets and the database to the UI, AI summaries, and
-          the Neo4j experiment graph.
+          Your single place to see what we tested, what won, and how similar ideas connect. CRO Analyst ingests
+          our live experiment data, keeps it fresh automatically, and gives you quick answers and visual context.
         </p>
       </header>
 
       <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">Data ingestion</h2>
+        <h2 className="text-xl font-semibold text-gray-900">What you can do</h2>
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
-          <li>
-            <strong>Sources:</strong> We pull from the live Google Sheet (range A:ZZ, gid configurable) via{" "}
-            <code>/api/import/sheets</code> (user session) and <code>/api/import/auto</code> (service account / cron).
-          </li>
-          <li>
-            <strong>Auth:</strong> Google OAuth for interactive imports; service account bearer token for scheduled
-            imports (header <code>x-internal-api-key</code> + <code>GOOGLE_SERVICE_ACCOUNT_ACCESS_TOKEN</code>).
-          </li>
-          <li>
-            <strong>Processing:</strong> Rows are normalized, coerced to dates/numbers, and upserted into Postgres
-            via Prisma. Screenshot URLs, extrapolated revenue, and vector embeddings are stored when present.
-          </li>
-          <li>
-            <strong>Limits:</strong> Optional <code>IMPORT_LIMIT</code> env or <code>?limit=</code> query controls row
-            count; otherwise full sheet is ingested.
-          </li>
+          <li>Browse stats for the latest month: top winners, vertical/geo breakdowns, and a 3D graph of patterns.</li>
+          <li>Drill into any experiment: who launched it, what changed, screenshots, results, and similar experiments.</li>
+          <li>Ask natural-language questions: pull tables or graph insights without writing SQL/Cypher.</li>
         </ul>
       </section>
 
       <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">Application model</h2>
+        <h2 className="text-xl font-semibold text-gray-900">How data stays fresh</h2>
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
           <li>
-            <strong>Database:</strong> Postgres holds the canonical <code>Experiment</code> table with dates, outcomes,
-            metrics, change types, elements, and screenshot links. Prisma adapter uses pooled SSL connections.
+            Live Google Sheet → CRO Analyst: the sheet is imported automatically on a schedule and can be refreshed
+            manually from the app.
           </li>
           <li>
-            <strong>Search & AI:</strong> Free-text queries embed the question, hit vector similarities (when enabled),
-            and ask the LLM to produce SQL. SQL is sanitized (quoted identifiers, read-only, forced limits) before
-            execution.
+            Data is cleaned and stored in Postgres (dates, outcomes, change types, screenshots, extrapolation, embeddings).
           </li>
           <li>
-            <strong>Graph:</strong> Experiments are mirrored in Neo4j with relationships to ChangeType, ElementChanged,
-            Vertical, Geo, Brand, and TargetMetric. We pull the winner&apos;s neighborhood and nearest similar
-            experiments (via <code>SIMILAR_TO</code> or shared change types).
+            Experiments are mirrored into Neo4j so we can surface relationships (change type, element, vertical, geo, brand, metric).
           </li>
           <li>
-            <strong>AuthN/AuthZ:</strong> NextAuth with Google; optional allowlist via <code>AUTH_ALLOWED_EMAILS</code>.
-            API routes reuse session tokens for Google calls when needed.
+            Ask AI uses the same fresh data; nothing is cached in the browser.
           </li>
         </ul>
       </section>
@@ -84,23 +66,34 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">Operational notes</h2>
+        <h2 className="text-xl font-semibold text-gray-900">How Ask AI works</h2>
+        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
+          <li>For data questions, we generate SQL, sanitize it (read-only, quoted, limited), and run it on Postgres.</li>
+          <li>For relationship questions, we generate Cypher to query Neo4j and return patterns (change type → element, etc.).</li>
+          <li>We show the SQL/Cypher used so you can trust and reuse the query.</li>
+        </ul>
+      </section>
+
+      <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
+        <h2 className="text-xl font-semibold text-gray-900">Technical details (for admins)</h2>
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
           <li>
-            <strong>Cron:</strong> Vercel cron (daily) calls <code>/api/import/auto</code>. Requires{" "}
-            <code>GOOGLE_SERVICE_ACCOUNT_ACCESS_TOKEN</code> and <code>AI_INTERNAL_API_KEY</code>.
+            <strong>Imports:</strong> <code>/api/import/sheets</code> (user session) and <code>/api/import/auto</code> (service account + cron).
+            Optional <code>IMPORT_LIMIT</code> or <code>?limit=</code> caps rows; range A:ZZ, gid configurable.
           </li>
           <li>
-            <strong>Env sync:</strong> Keep <code>.env.local</code> aligned with Vercel envs (DB URL, Google creds, Neo4j,
-            AI keys).
+            <strong>Auth:</strong> NextAuth with Google; optional allowlist via <code>AUTH_ALLOWED_EMAILS</code>. Service calls use{" "}
+            <code>x-internal-api-key</code> + <code>GOOGLE_SERVICE_ACCOUNT_ACCESS_TOKEN</code>.
           </li>
           <li>
-            <strong>Error handling:</strong> Import endpoints log errors and return JSON with messages. Graph fallbacks
-            include defensive defaults for missing properties (e.g., geo codes).
+            <strong>Database:</strong> Prisma on Postgres (SSL). <code>Experiment</code> holds dates, outcomes, change types, elements, screenshots, extrapolation, embeddings.
           </li>
           <li>
-            <strong>Diagnostics:</strong> Use <code>/api/health</code> for a quick readiness check; Vercel logs for server
-            exceptions; Prisma/Neo4j clients log warnings in case of SSL or connection issues.
+            <strong>Graph:</strong> Experiments in Neo4j linked to ChangeType, ElementChanged, Vertical, Geo, Brand, TargetMetric.
+            Similar experiments from <code>SIMILAR_TO</code> or overlap on change types/elements/vertical/geo/brand/metric.
+          </li>
+          <li>
+            <strong>Ops:</strong> Vercel cron (daily) hits <code>/api/import/auto</code>; <code>/api/health</code> for readiness; errors surface in Vercel logs.
           </li>
         </ul>
       </section>
