@@ -297,9 +297,9 @@ async function runGraph(question: string) {
 MATCH (e:Experiment)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)-[:CHANGED_ELEMENT]->(el:ElementChanged)
 WHERE (e.winningVar IS NULL OR e.winningVar = "")
   AND (
-    (exists(e.dateConcluded) AND datetime(e.dateConcluded) >= datetime() - duration({months:12}))
-    OR (exists(e.dateLaunched) AND datetime(e.dateLaunched) >= datetime() - duration({months:12}))
-    OR (NOT exists(e.dateConcluded) AND NOT exists(e.dateLaunched))
+    (e.dateConcluded IS NOT NULL AND datetime(e.dateConcluded) >= datetime() - duration({months:12}))
+    OR (e.dateLaunched IS NOT NULL AND datetime(e.dateLaunched) >= datetime() - duration({months:12}))
+    OR (e.dateConcluded IS NULL AND e.dateLaunched IS NULL)
   )
 WITH ct.name AS changeType, el.name AS elementChanged, count(e) AS experimentCount
 WHERE NOT (changeType = "other" AND elementChanged = "other")
@@ -310,9 +310,9 @@ LIMIT 200
     : `
 MATCH (e:Experiment)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)-[:CHANGED_ELEMENT]->(el:ElementChanged)
 WHERE (
-  (exists(e.dateConcluded) AND datetime(e.dateConcluded) >= datetime() - duration({months:12}))
-  OR (exists(e.dateLaunched) AND datetime(e.dateLaunched) >= datetime() - duration({months:12}))
-  OR (NOT exists(e.dateConcluded) AND NOT exists(e.dateLaunched))
+  (e.dateConcluded IS NOT NULL AND datetime(e.dateConcluded) >= datetime() - duration({months:12}))
+  OR (e.dateLaunched IS NOT NULL AND datetime(e.dateLaunched) >= datetime() - duration({months:12}))
+  OR (e.dateConcluded IS NULL AND e.dateLaunched IS NULL)
 )
 WITH ct.name AS changeType, el.name AS elementChanged, count(e) AS experimentCount
 WHERE NOT (changeType = "other" AND elementChanged = "other")
