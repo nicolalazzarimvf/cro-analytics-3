@@ -159,7 +159,12 @@ function enforceLaunchedBy(question: string, sql: string) {
     "dateconcluded",
     "datelaunched",
     "concluded",
-    "launched"
+    "launched",
+    "experiment",
+    "experiments",
+    "overlay",
+    "overlayloader",
+    "loader"
   ]);
   if (!name) return sql;
   const lower = name.toLowerCase();
