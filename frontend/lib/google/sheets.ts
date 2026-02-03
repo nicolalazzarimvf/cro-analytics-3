@@ -75,8 +75,9 @@ export async function fetchSheetValues(options: {
   spreadsheetId: string;
   rangeA1: string;
   retries?: number;
+  timeoutMs?: number;
 }) {
-  const { accessToken, spreadsheetId, retries = 2 } = options;
+  const { accessToken, spreadsheetId, retries = 1, timeoutMs = 20000 } = options;
   const rangeA1 = normalizeA1Range(options.rangeA1);
 
   const url = new URL(
@@ -93,39 +94,53 @@ export async function fetchSheetValues(options: {
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
       }
 
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        },
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(30000) // 30 second timeout
-      });
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        const error = new Error(`Google Sheets API error (${res.status}): ${body.slice(0, 500)}`);
-        
-        // Retry on 500/503 errors, but not on auth errors (401, 403) or not found (404)
-        if ((res.status === 500 || res.status === 503) && attempt < retries) {
-          lastError = error;
-          console.warn(`[Sheets API] Attempt ${attempt + 1} failed, retrying...`, error.message);
-          continue;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          },
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          const error = new Error(`Google Sheets API error (${res.status}): ${body.slice(0, 500)}`);
+          
+          // Retry on 500/503 errors, but not on auth errors (401, 403) or not found (404)
+          if ((res.status === 500 || res.status === 503) && attempt < retries) {
+            lastError = error;
+            console.warn(`[Sheets API] Attempt ${attempt + 1} failed, retrying...`, error.message);
+            continue;
+          }
+          
+          throw error;
         }
-        
-        throw error;
-      }
 
-      return (await res.json()) as SheetValuesResponse;
+        return (await res.json()) as SheetValuesResponse;
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        throw fetchErr;
+      }
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       
-      // Don't retry on timeout, abort, or auth errors
-      if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
-        throw new Error(`Google Sheets API timed out after ${attempt + 1} attempts`);
+      // Don't retry on timeout/abort - these are likely infrastructure issues
+      if (err instanceof Error && (err.name === 'AbortError' || err.message.includes('aborted'))) {
+        if (attempt < retries) {
+          console.warn(`[Sheets API] Request aborted/timed out on attempt ${attempt + 1}, retrying...`);
+          continue;
+        }
+        throw new Error(`Google Sheets API timed out after ${attempt + 1} attempts (${timeoutMs}ms per attempt)`);
       }
       
-      // Retry on network errors
-      if (attempt < retries && err instanceof Error && !err.message.includes('API error')) {
+      // Retry on network errors (but not auth errors)
+      if (attempt < retries && err instanceof Error && !err.message.includes('401') && !err.message.includes('403')) {
         console.warn(`[Sheets API] Attempt ${attempt + 1} failed, retrying...`, err.message);
         continue;
       }

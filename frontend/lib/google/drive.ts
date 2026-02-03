@@ -70,34 +70,48 @@ export async function exportGoogleSheetToCsv(options: {
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt - 1) * 1000));
       }
 
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`
-        },
-        // Add timeout to prevent hanging
-        signal: AbortSignal.timeout(30000) // 30 second timeout
-      });
-
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        const error = new Error(`Google Drive export error (${res.status}): ${body.slice(0, 500)}`);
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+      
+      try {
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          },
+          signal: controller.signal
+        });
         
-        // Retry on 500/503 errors, but not on auth errors
-        if ((res.status === 500 || res.status === 503) && attempt < retries) {
-          lastError = error;
-          console.warn(`[Drive export] Attempt ${attempt + 1} failed, retrying...`, error.message);
-          continue;
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          const error = new Error(`Google Drive export error (${res.status}): ${body.slice(0, 500)}`);
+          
+          // Retry on 500/503 errors, but not on auth errors
+          if ((res.status === 500 || res.status === 503) && attempt < retries) {
+            lastError = error;
+            console.warn(`[Drive export] Attempt ${attempt + 1} failed, retrying...`, error.message);
+            continue;
+          }
+          
+          throw error;
         }
-        
-        throw error;
-      }
 
-      return await res.text();
+        return await res.text();
+      } catch (fetchErr) {
+        clearTimeout(timeoutId);
+        throw fetchErr;
+      }
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       
       // Don't retry on timeout or abort errors
-      if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+      if (err instanceof Error && (err.name === 'AbortError' || err.message.includes('aborted'))) {
+        if (attempt < retries) {
+          console.warn(`[Drive export] Request aborted/timed out on attempt ${attempt + 1}, retrying...`);
+          continue;
+        }
         throw new Error(`Google Drive export timed out after ${attempt + 1} attempts`);
       }
       

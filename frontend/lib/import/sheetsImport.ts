@@ -181,28 +181,34 @@ async function upsertFromTabular(options: {
 
     let screenshotWebUrl: string | null = null;
     let screenshotThumbnailUrl: string | null = null;
+    // Skip Drive lookups during import to avoid timeouts - can be fetched later if needed
+    // Uncomment below to enable Drive screenshot lookups (slower but more complete)
+    /*
     if (screenshotDriveFileId) {
       try {
         driveLookups += 1;
         // Add timeout to prevent hanging on slow Drive API calls
-        const file = await Promise.race([
-          fetchDriveFileMetadata({
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout per lookup
+        
+        try {
+          const file = await fetchDriveFileMetadata({
             accessToken,
             fileId: screenshotDriveFileId
-          }),
-          new Promise<null>((resolve) => 
-            setTimeout(() => resolve(null), 3000) // 3 second timeout per lookup
-          )
-        ]);
-        if (file) {
+          });
+          clearTimeout(timeoutId);
           screenshotWebUrl = file.webViewLink ?? null;
           screenshotThumbnailUrl = file.thumbnailLink ?? null;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          throw err;
         }
       } catch (err) {
         // Keep import resilient: screenshot metadata is optional.
         console.warn(`[import] Failed to fetch Drive metadata for ${screenshotDriveFileId}:`, err instanceof Error ? err.message : err);
       }
     }
+    */
 
     await prisma.experiment.upsert({
       where: { experimentId },
@@ -369,7 +375,8 @@ export async function importExperimentsFromSheet(options: {
       accessToken,
       spreadsheetId,
       rangeA1: effectiveRangeA1,
-      retries: 2
+      retries: 1, // Reduced retries to avoid timeout
+      timeoutMs: 15000 // 15 second timeout per attempt
     });
     const values = data.values ?? [];
     if (values.length >= 2) {
