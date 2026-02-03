@@ -19,7 +19,10 @@ function pickAccessToken(req: NextRequest) {
   return null;
 }
 
+export const maxDuration = 60; // Vercel Pro plan allows up to 60 seconds
+
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
   try {
     const internalToken = pickAccessToken(request);
     let accessToken = internalToken;
@@ -49,16 +52,47 @@ export async function POST(request: NextRequest) {
     const limitEnv = process.env.IMPORT_LIMIT ? Math.max(1, Number(process.env.IMPORT_LIMIT) || 0) : undefined;
     const limit = limitParam ? Math.max(1, Number(limitParam) || 0) : limitEnv;
 
+    console.log(`[import/auto] Starting import, limit: ${limit ?? "unlimited"}`);
     const result = await importExperimentsFromSheet({
       accessToken,
       spreadsheetId,
       rangeA1,
       limit
     });
+    const elapsed = Date.now() - startTime;
+    console.log(`[import/auto] Completed in ${elapsed}ms:`, {
+      upserted: result.upserted,
+      skipped: result.skipped,
+      totalRows: result.totalRows
+    });
     return NextResponse.json(result);
   } catch (err) {
-    console.error("import/auto error", err);
-    const message = err instanceof Error ? err.message : "Unexpected error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const elapsed = Date.now() - startTime;
+    console.error(`[import/auto] Error after ${elapsed}ms:`, err);
+    
+    let message = "Unexpected error";
+    let status = 500;
+    
+    if (err instanceof Error) {
+      message = err.message;
+      // Check for timeout-related errors
+      if (message.includes("timeout") || message.includes("TIMEOUT") || elapsed >= 55000) {
+        message = `Import timed out after ${Math.round(elapsed / 1000)}s. The import is processing too many rows. Try adding ?limit=100 to test with fewer rows, or process in batches.`;
+        status = 504;
+      }
+      // Check for Google API errors
+      if (message.includes("Google") || message.includes("403") || message.includes("401")) {
+        status = 403;
+      }
+    }
+    
+    return NextResponse.json(
+      { 
+        error: message,
+        elapsedMs: elapsed,
+        hint: "If this persists, try importing with a limit parameter: ?limit=100"
+      }, 
+      { status }
+    );
   }
 }

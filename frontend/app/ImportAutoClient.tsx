@@ -39,7 +39,17 @@ export default function ImportAutoClient() {
       json = (await res.json()) as ImportResult;
     } else {
       const text = await res.text().catch(() => "");
-      json = { error: text.slice(0, 300) || `Request failed (${res.status})` };
+      const errorMsg = text.slice(0, 500) || `Request failed (${res.status})`;
+      json = { 
+        error: res.status === 504 
+          ? "Import timed out. The process is taking too long. Try importing with fewer rows or check server logs."
+          : errorMsg
+      };
+    }
+    
+    // If we got an error response, include it in the result
+    if (!res.ok && "error" in json) {
+      console.error("Import error:", json.error);
     }
     window.clearInterval(timer);
     setProgress(100);

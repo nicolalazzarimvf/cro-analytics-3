@@ -19,7 +19,8 @@
     "ai:embed": "tsx scripts/embed-experiments.ts --limit 50",
     "ai:embed:all": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/embed-experiments.ts --limit 0",
     "neo4j:test": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/test-neo4j.ts",
-    "neo4j:sync": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/sync-neo4j.ts"
+    "neo4j:sync": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/sync-neo4j.ts",
+    "db:test": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/test-db.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.1.0",

@@ -184,14 +184,23 @@ async function upsertFromTabular(options: {
     if (screenshotDriveFileId) {
       try {
         driveLookups += 1;
-        const file = await fetchDriveFileMetadata({
-          accessToken,
-          fileId: screenshotDriveFileId
-        });
-        screenshotWebUrl = file.webViewLink ?? null;
-        screenshotThumbnailUrl = file.thumbnailLink ?? null;
-      } catch {
+        // Add timeout to prevent hanging on slow Drive API calls
+        const file = await Promise.race([
+          fetchDriveFileMetadata({
+            accessToken,
+            fileId: screenshotDriveFileId
+          }),
+          new Promise<null>((resolve) => 
+            setTimeout(() => resolve(null), 3000) // 3 second timeout per lookup
+          )
+        ]);
+        if (file) {
+          screenshotWebUrl = file.webViewLink ?? null;
+          screenshotThumbnailUrl = file.thumbnailLink ?? null;
+        }
+      } catch (err) {
         // Keep import resilient: screenshot metadata is optional.
+        console.warn(`[import] Failed to fetch Drive metadata for ${screenshotDriveFileId}:`, err instanceof Error ? err.message : err);
       }
     }
 
@@ -355,10 +364,12 @@ export async function importExperimentsFromSheet(options: {
 
   // 1) Try Sheets Values API (works well for structured tabular data and specific ranges).
   try {
+    console.log(`[import] Attempting Sheets Values API for range: ${effectiveRangeA1}`);
     const data = await fetchSheetValues({
       accessToken,
       spreadsheetId,
-      rangeA1: effectiveRangeA1
+      rangeA1: effectiveRangeA1,
+      retries: 2
     });
     const values = data.values ?? [];
     if (values.length >= 2) {
@@ -408,13 +419,25 @@ export async function importExperimentsFromSheet(options: {
       });
       if (result.upserted > 0 || result.skippedExisting > 0) return result;
     }
-  } catch {
-    // Fall through to Drive CSV export.
+  } catch (err) {
+    // Log the Sheets API error but continue to Drive CSV export fallback
+    console.warn("[import] Sheets Values API failed, trying Drive export:", err instanceof Error ? err.message : err);
   }
 
   // 2) Fallback: export the spreadsheet as CSV via Drive API.
   // This can be more forgiving when headers are not in the expected format.
-  const csvText = await exportGoogleSheetToCsv({ accessToken, spreadsheetId });
+  let csvText: string;
+  try {
+    csvText = await exportGoogleSheetToCsv({ accessToken, spreadsheetId });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("[import] Drive CSV export failed:", errorMsg);
+    throw new Error(
+      `Failed to import from Google Sheets. Both Sheets Values API and Drive export failed. ` +
+      `Drive export error: ${errorMsg}. ` +
+      `Please check your Google permissions and try again, or contact support if this persists.`
+    );
+  }
   const records = parse(csvText, {
     columns: true,
     skip_empty_lines: true,
