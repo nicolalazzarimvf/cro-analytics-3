@@ -266,6 +266,8 @@ Rules:
 - Use ISO dates (YYYY-MM-DD).
 - When filtering by month, use >= start AND < next month.
 - For time windows, consider dateConcluded OR dateLaunched as appropriate.
+- IMPORTANT: For vertical and geo filters, ALWAYS use case-insensitive ILIKE with wildcards: e.g., "vertical" ILIKE '%Hearing%' AND "geo" ILIKE '%DK%'. Never use exact equality (=) for these fields.
+- Common verticals: Solar Panels, Heat Pumps, Hearing Aids, Merchant Accounts, etc. Common geos: UK, US, DK, DE, AU, etc.
 Schema columns include experimentId, testName, vertical, geo, targetMetric, changeType, elementChanged, winningVar, monthlyExtrap, metrics, hypothesis, lessonLearned, dates, etc.
 `
     },

@@ -237,6 +237,8 @@ Rules:
 - When filtering by month, use an inclusive lower bound and exclusive upper bound: e.g., >= '2025-10-01' AND < '2025-11-01'.
 - For time-windowed questions, consider both dateConcluded and dateLaunched where appropriate (e.g., concluded within window OR launched within window). For geo/vertical, treat geo separately from vertical (do not concatenate).
 - For "failed experiments", include cases where winningVar is null/empty or the primarySignificance1 is above a typical threshold (e.g., > 0.05) or CR/RPV deltas are negative; make the WHERE reflect that.
+- IMPORTANT: For vertical and geo filters, ALWAYS use case-insensitive ILIKE with wildcards: e.g., "vertical" ILIKE '%Hearing%' AND "geo" ILIKE '%DK%'. Never use exact equality (=) for these fields.
+- Common verticals: Solar Panels, Heat Pumps, Hearing Aids, Merchant Accounts, etc. Common geos: UK, US, DK, DE, AU, etc.
 Schema:
 ${SCHEMA_DESCRIPTION}`
     },
