@@ -146,10 +146,12 @@ function sanitizeSql(sql: string) {
 
 // Force owner/person filters to use launchedBy (with a concluded date) instead of arbitrary LIKEs.
 function enforceLaunchedBy(question: string, sql: string) {
-  const nameMatch =
-    question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i) || sql.match(/like\s*'%([^%']+)%'/i);
+  // Only match "by <name>" or "from <name>" patterns, not arbitrary LIKE clauses
+  const nameMatch = question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i);
+  // Don't extract names from SQL LIKE clauses - they could be verticals/geos
   const rawName = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
   const name = rawName ? rawName.replace(/["']/g, "") : null;
+  // Block common non-person terms including verticals, geos, and technical terms
   const blockedNames = new Set([
     "monthly",
     "extrapolation",
@@ -164,7 +166,66 @@ function enforceLaunchedBy(question: string, sql: string) {
     "experiments",
     "overlay",
     "overlayloader",
-    "loader"
+    "loader",
+    // Verticals
+    "solar",
+    "panels",
+    "heat",
+    "pumps",
+    "hearing",
+    "aids",
+    "merchant",
+    "accounts",
+    "boilers",
+    "windows",
+    "insulation",
+    "ev",
+    "chargers",
+    // Geos
+    "uk",
+    "us",
+    "dk",
+    "de",
+    "au",
+    "nz",
+    "ca",
+    "ie",
+    "pl",
+    "es",
+    "fr",
+    "it",
+    "nl",
+    "se",
+    "no",
+    "fi",
+    "at",
+    "ch",
+    "be",
+    "denmark",
+    "germany",
+    "australia",
+    "canada",
+    "ireland",
+    "poland",
+    "spain",
+    "france",
+    "italy",
+    "netherlands",
+    "sweden",
+    "norway",
+    "finland",
+    "austria",
+    "switzerland",
+    "belgium",
+    // Common test terms
+    "cta",
+    "button",
+    "form",
+    "page",
+    "test",
+    "tests",
+    "vertical",
+    "geo"
   ]);
   if (!name) return sql;
   const lower = name.toLowerCase();

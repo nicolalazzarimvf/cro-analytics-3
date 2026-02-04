@@ -176,20 +176,39 @@ function sanitizeSql(sql: string) {
   return s;
 }
 
-// If the question includes "by/from <name>" (or the SQL already has a LIKE '%name%'), enforce a launchedBy filter in the SQL.
+// If the question includes "by/from <name>", enforce a launchedBy filter in the SQL.
+// Only triggers for actual person names, not verticals/geos/test terms.
 function enforceLaunchedBy(question: string, sql: string) {
-  const nameMatch = question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i) || sql.match(/like\s*'%([^%']+)%'/i);
+  // Only match "by <name>" or "from <name>" patterns in the question, not SQL LIKE clauses
+  const nameMatch = question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i);
   const name = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
   if (!name) return sql;
+  
+  // Block common non-person terms including verticals, geos, and technical terms
+  const blockedNames = new Set([
+    "monthly", "extrapolation", "top", "latest", "date", "dateconcluded", "datelaunched",
+    "concluded", "launched", "experiment", "experiments", "overlay", "overlayloader", "loader",
+    // Verticals
+    "solar", "panels", "heat", "pumps", "hearing", "aids", "merchant", "accounts",
+    "boilers", "windows", "insulation", "ev", "chargers",
+    // Geos
+    "uk", "us", "dk", "de", "au", "nz", "ca", "ie", "pl", "es", "fr", "it", "nl",
+    "se", "no", "fi", "at", "ch", "be", "denmark", "germany", "australia", "canada",
+    "ireland", "poland", "spain", "france", "italy", "netherlands", "sweden", "norway",
+    "finland", "austria", "switzerland", "belgium",
+    // Common test terms
+    "cta", "button", "form", "page", "test", "tests", "vertical", "geo"
+  ]);
+  
+  const lower = name.toLowerCase();
+  if (blockedNames.has(lower) || lower.includes("date") || lower.includes("time")) return sql;
+  
   const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
   const concludeCondition = `"dateConcluded" IS NOT NULL`;
   const trimmed = sql.replace(/;+\s*$/, "").trim();
 
-  // Strip any existing ownerName/owner fields and remove testName LIKE/ILIKE filters
+  // Strip any existing ownerName/owner fields
   let base = trimmed.replace(/\bownerName\b/gi, `"launchedBy"`).replace(/\bowner\b/gi, `"launchedBy"`);
-  base = base.replace(/\b"testName"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) => (andWord ? "" : ""));
-  // Remove vertical LIKE filters that are clearly name searches
-  base = base.replace(/\b"vertical"\s+(?:I)?LIKE\s+'%[^%']+%'\s*(AND)?/gi, (_m, andWord) => (andWord ? "" : ""));
 
   // If there's already a launchedBy filter, leave as-is.
   if (/\b"launchedBy"\b/i.test(base)) return base;
