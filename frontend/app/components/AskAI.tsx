@@ -40,196 +40,88 @@ function ThinkingDots() {
   );
 }
 
-function pickCount(row: Record<string, any>) {
-  return (
-    row.experimentCount ??
-    row.count ??
-    row.wins ??
-    row.total ??
-    row.num ??
-    row.rowCount ??
-    row.frequency ??
-    "n"
-  );
-}
+/**
+ * Build a single combined 3D graph showing experiments connected to their
+ * changeType and elementChanged attributes. Experiments that share the same
+ * attribute naturally cluster together.
+ */
+function buildCombinedGraphData(
+  sqlRows: Record<string, any>[],
+  graphRows: Record<string, any>[],
+) {
+  type GNode = { id: string; label: string; type: string; uuid?: string; title?: string };
+  const nodesMap = new Map<string, GNode>();
+  const links: Array<{ source: string; target: string }> = [];
 
-function filteredGraphRows(graphRows: Record<string, any>[]) {
-  if (!graphRows?.length) return [];
-  return graphRows.filter((r) => {
-    const ct = (r?.changeType ?? "").toString().toLowerCase();
-    const el = (r?.elementChanged ?? "").toString().toLowerCase();
-    const isUnknownCt = !ct || ct.includes("unknown");
-    const isUnknownEl = !el || el.includes("unknown");
-    const isOtherCt = ct === "other";
-    const isOtherEl = el === "other";
-    return !((isUnknownCt || isOtherCt) && (isUnknownEl || isOtherEl));
-  });
-}
+  // Build a set of pattern counts for sizing attribute nodes
+  const patternCounts = new Map<string, number>();
+  for (const r of graphRows) {
+    const ct = (r.changeType ?? "").toString().trim();
+    const el = (r.elementChanged ?? "").toString().trim();
+    const cnt = Number(r.experimentCount ?? r.count ?? 1);
+    if (ct) patternCounts.set(`ct:${ct}`, (patternCounts.get(`ct:${ct}`) ?? 0) + cnt);
+    if (el) patternCounts.set(`el:${el}`, (patternCounts.get(`el:${el}`) ?? 0) + cnt);
+  }
 
-function renderGraphChart(graphRows: Record<string, any>[]) {
-  const rows = filteredGraphRows(graphRows);
-  if (!rows.length) return null;
-  const items = rows
-    .slice(0, 10)
-    .map((r) => ({
-      label: `${r.changeType ?? "Unknown change"} → ${r.elementChanged ?? "Unknown element"}`,
-      value: Number(pickCount(r)) || 0
-    }))
-    .filter((d) => d.value > 0);
-  if (!items.length) return null;
-  const max = Math.max(...items.map((d) => d.value));
-  return (
-    <div className="space-y-2">
-      <div className="text-xs font-semibold text-gray-700">Graph patterns (top 10)</div>
-      <div className="space-y-1">
-        {items.map((item, idx) => (
-          <div key={idx} className="text-xs text-gray-800">
-            <div className="flex items-center gap-2">
-              <div className="flex-1 overflow-hidden rounded bg-gray-100">
-                <div
-                  className="h-3 rounded bg-brand-500"
-                  style={{ width: `${Math.max(5, (item.value / max) * 100)}%` }}
-                  aria-label={`${item.label} ${item.value}`}
-                />
-              </div>
-              <span className="w-10 text-right font-semibold text-gray-700">{item.value}</span>
-            </div>
-            <div className="truncate text-[11px] text-gray-600">{item.label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+  // Add experiment rows as nodes (limit to 30 for performance)
+  const experiments = sqlRows
+    .filter((r) => r && r.experimentId)
+    .slice(0, 30);
 
-function renderGraphNetwork(graphRows: Record<string, any>[]) {
-  const rows = filteredGraphRows(graphRows);
-  if (!rows.length) return null;
-  const edges = rows
-    .slice(0, 12)
-    .map((r) => ({
-      source: r.changeType ?? "Unknown change",
-      target: r.elementChanged ?? "Unknown element",
-      value: Number(pickCount(r)) || 1
-    }))
-    .filter((e) => e.source && e.target);
-  if (!edges.length) return null;
+  for (const exp of experiments) {
+    const expId = (exp.experimentId ?? "").toString().trim();
+    if (!expId || nodesMap.has(expId)) continue;
 
-  const leftNodes = Array.from(new Set(edges.map((e) => e.source)));
-  const rightNodes = Array.from(new Set(edges.map((e) => e.target)));
-  const maxVal = Math.max(...edges.map((e) => e.value));
+    nodesMap.set(expId, {
+      id: expId,
+      label: expId,
+      type: "experiment",
+      uuid: exp.id?.toString(),
+      title: exp.testName?.toString() ?? undefined,
+    });
 
-  const width = 560;
-  const height = 260;
-  const margin = 16;
+    // Link experiment to its changeType
+    const ct = (exp.changeType ?? "").toString().trim();
+    if (ct) {
+      const ctKey = `ct:${ct}`;
+      if (!nodesMap.has(ctKey)) {
+        nodesMap.set(ctKey, { id: ctKey, label: ct, type: "change" });
+      }
+      links.push({ source: expId, target: ctKey });
+    }
 
-  const leftY = (i: number) =>
-    margin + (i + 1) * ((height - 2 * margin) / (leftNodes.length + 1));
-  const rightY = (i: number) =>
-    margin + (i + 1) * ((height - 2 * margin) / (rightNodes.length + 1));
+    // Link experiment to its elementChanged
+    const el = (exp.elementChanged ?? "").toString().trim();
+    if (el) {
+      const elKey = `el:${el}`;
+      if (!nodesMap.has(elKey)) {
+        nodesMap.set(elKey, { id: elKey, label: el, type: "element" });
+      }
+      links.push({ source: expId, target: elKey });
+    }
+  }
 
-  const leftX = margin + 80;
-  const rightX = width - margin - 80;
+  // If SQL rows don't have changeType/elementChanged, fall back to graph-only pattern nodes
+  if (links.length === 0 && graphRows.length > 0) {
+    for (const r of graphRows.slice(0, 20)) {
+      const ct = (r.changeType ?? "").toString().trim();
+      const el = (r.elementChanged ?? "").toString().trim();
+      if (!ct || !el) continue;
+      const ctKey = `ct:${ct}`;
+      const elKey = `el:${el}`;
+      if (!nodesMap.has(ctKey)) nodesMap.set(ctKey, { id: ctKey, label: ct, type: "change" });
+      if (!nodesMap.has(elKey)) nodesMap.set(elKey, { id: elKey, label: el, type: "element" });
+      links.push({ source: ctKey, target: elKey });
+    }
+  }
 
-  return (
-    <div className="space-y-2">
-      <div className="text-xs font-semibold text-gray-700">Graph view (top links)</div>
-      <div className="overflow-x-auto">
-        <svg width={width} height={height} className="bg-white">
-          {/* edges */}
-          {edges.map((e, idx) => {
-            const sIdx = leftNodes.indexOf(e.source);
-            const tIdx = rightNodes.indexOf(e.target);
-            const y1 = leftY(sIdx);
-            const y2 = rightY(tIdx);
-            const strokeWidth = Math.max(1.5, (e.value / maxVal) * 6);
-            return (
-              <g key={idx} opacity={0.8}>
-                <line
-                  x1={leftX}
-                  y1={y1}
-                  x2={rightX}
-                  y2={y2}
-                  stroke="#2563eb"
-                  strokeWidth={strokeWidth}
-                  strokeLinecap="round"
-                  opacity={0.6}
-                />
-                <text
-                  x={(leftX + rightX) / 2}
-                  y={(y1 + y2) / 2 - 4}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fill="#4b5563"
-                >
-                  {e.value}
-                </text>
-              </g>
-            );
-          })}
-          {/* left nodes */}
-          {leftNodes.map((n, i) => (
-            <g key={`l-${n}`}>
-              <circle cx={leftX} cy={leftY(i)} r={8} fill="#1d4ed8" opacity={0.9} />
-              <text x={leftX - 12} y={leftY(i) + 4} textAnchor="end" fontSize="11" fill="#1f2937">
-                {n}
-              </text>
-            </g>
-          ))}
-          {/* right nodes */}
-          {rightNodes.map((n, i) => (
-            <g key={`r-${n}`}>
-              <circle cx={rightX} cy={rightY(i)} r={8} fill="#10b981" opacity={0.9} />
-              <text x={rightX + 12} y={rightY(i) + 4} textAnchor="start" fontSize="11" fill="#1f2937">
-                {n}
-              </text>
-            </g>
-          ))}
-        </svg>
-      </div>
-    </div>
-  );
-}
+  if (nodesMap.size < 2) return null;
 
-function renderGraph3D(graphRows: Record<string, any>[]) {
-  const rows = filteredGraphRows(graphRows).slice(0, 20);
-  if (!rows.length) return null;
-
-  const nodesMap = new Map<string, { id: string; label: string; type: string }>();
-  const links: Array<{ source: string; target: string; value: number }> = [];
-
-  rows.forEach((r) => {
-    const ct = r.changeType ?? "Unknown change";
-    const el = r.elementChanged ?? "Unknown element";
-    const val = Number(pickCount(r)) || 1;
-    if (!nodesMap.has(ct)) nodesMap.set(ct, { id: ct, label: ct, type: "change" });
-    if (!nodesMap.has(el)) nodesMap.set(el, { id: el, label: el, type: "element" });
-    links.push({ source: ct, target: el, value: val });
-  });
-
-  const data = {
+  return {
     nodes: Array.from(nodesMap.values()),
-    links
+    links,
+    patternCounts,
   };
-
-  return (
-    <div className="space-y-2">
-      <div className="text-xs font-semibold text-gray-700">3D graph (top links)</div>
-      <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-200 bg-white">
-        <ForceGraph3D
-          graphData={data}
-          width={600}
-          height={400}
-          nodeAutoColorBy="type"
-          nodeLabel={(n: any) => n.label}
-          nodeVal={(n: any) => (n.type === "change" ? 6 : 4)}
-          linkWidth={(l: any) => Math.max(1.5, (l.value / Math.max(...links.map((x) => x.value))) * 5)}
-          linkDirectionalParticles={1}
-          linkDirectionalParticleSpeed={0.004}
-        />
-      </div>
-    </div>
-  );
 }
 
 export default function AskAI() {
@@ -591,58 +483,117 @@ export default function AskAI() {
           <ReactMarkdown>{result.answer}</ReactMarkdown>
         </div>
       ) : null}
-      {result ? (
-        <details className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Show source results (SQL + Graph)</summary>
-          <div className="mt-3 space-y-4">
-            {/* SQL results section */}
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 shadow-sm space-y-3">
-              <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
-                <span>SQL result ({result.rowCount} rows)</span>
-                {result.sqlError ? <span className="text-xs text-red-600">{result.sqlError}</span> : null}
-              </div>
-              {result.notes ? (
-                <div className="text-xs text-gray-600">
-                  Notes: <span className="font-medium text-gray-800">{result.notes}</span>
+      {result ? (() => {
+        const graphData = buildCombinedGraphData(result.rows, result.graphRows);
+        return (
+          <>
+            {/* Combined graph — shown directly below the answer */}
+            {graphData ? (
+              <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+                <div>
+                  <div className="text-sm font-semibold text-gray-900">Experiment graph</div>
+                  <p className="text-xs text-gray-500">
+                    Experiments linked to their change type and element. Click an experiment to view details.
+                  </p>
                 </div>
-              ) : null}
-              {result.sql ? (
-                <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
-                  <summary className="cursor-pointer text-sm font-semibold text-gray-900">SQL used</summary>
-                  <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{result.sql}</pre>
-                </details>
-              ) : null}
-              {result.rows.length > 0 ? (
-                <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
-                  <summary className="cursor-pointer text-sm font-semibold text-gray-900">Data table</summary>
-                  {renderTable({ rows: result.rows, rowCount: result.rowCount })}
-                </details>
-              ) : null}
-            </div>
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
+                    <span className="block h-2.5 w-2.5 rounded-full bg-orange-500" /> Experiment
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
+                    <span className="block h-2.5 w-2.5 rounded-full bg-blue-500" /> Change type
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
+                    <span className="block h-2.5 w-2.5 rounded-full bg-emerald-500" /> Element
+                  </span>
+                </div>
+                <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 bg-white">
+                  <ForceGraph3D
+                    graphData={{ nodes: graphData.nodes, links: graphData.links }}
+                    width={800}
+                    height={400}
+                    backgroundColor="#ffffff"
+                    nodeColor={(node: any) => {
+                      switch (node.type) {
+                        case "experiment": return "#f97316";
+                        case "change": return "#3b82f6";
+                        case "element": return "#10b981";
+                        default: return "#6b7280";
+                      }
+                    }}
+                    nodeLabel={(n: any) => {
+                      if (n.type === "experiment") return `${n.label}${n.title ? ` — ${n.title}` : ""}`;
+                      return n.label;
+                    }}
+                    nodeVal={(n: any) => {
+                      if (n.type === "experiment") return 3;
+                      // Size attribute nodes by how many experiments use them
+                      const key = n.id;
+                      const cnt = graphData.patternCounts.get(key) ?? 1;
+                      return Math.max(4, Math.min(14, cnt * 0.8));
+                    }}
+                    linkWidth={1.5}
+                    linkDirectionalParticles={1}
+                    linkDirectionalParticleSpeed={0.005}
+                    warmupTicks={30}
+                    cooldownTicks={100}
+                    onNodeClick={(node: any) => {
+                      if (node.type === "experiment" && node.uuid) {
+                        setModalId(node.uuid);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
 
-            {/* Graph results section */}
-            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 shadow-sm space-y-3">
-              <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
-                <span>Graph patterns ({result.graphRowCount} patterns)</span>
-                {result.graphError ? <span className="text-xs text-red-600">{result.graphError}</span> : null}
-              </div>
-              {result.graphRows.length > 0 ? (
-                <div className="space-y-3">
-                  {renderGraphChart(result.graphRows)}
-                  {renderGraphNetwork(result.graphRows)}
-                  {renderGraph3D(result.graphRows)}
-                  <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
-                    <summary className="cursor-pointer text-sm font-semibold text-gray-900">Pattern data</summary>
-                    {renderTable({ rows: result.graphRows, rowCount: result.graphRowCount })}
-                  </details>
+            {/* Collapsible source data */}
+            <details className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+              <summary className="cursor-pointer text-sm font-semibold text-gray-900">Show source data</summary>
+              <div className="mt-3 space-y-4">
+                {/* SQL */}
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
+                    <span>SQL result ({result.rowCount} rows)</span>
+                    {result.sqlError ? <span className="text-xs text-red-600">{result.sqlError}</span> : null}
+                  </div>
+                  {result.notes ? (
+                    <div className="text-xs text-gray-600">
+                      Notes: <span className="font-medium text-gray-800">{result.notes}</span>
+                    </div>
+                  ) : null}
+                  {result.sql ? (
+                    <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
+                      <summary className="cursor-pointer text-sm font-semibold text-gray-900">SQL used</summary>
+                      <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{result.sql}</pre>
+                    </details>
+                  ) : null}
+                  {result.rows.length > 0 ? (
+                    <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
+                      <summary className="cursor-pointer text-sm font-semibold text-gray-900">Data table</summary>
+                      {renderTable({ rows: result.rows, rowCount: result.rowCount })}
+                    </details>
+                  ) : null}
                 </div>
-              ) : !result.graphError ? (
-                <div className="text-xs text-gray-500">No graph patterns found for this query.</div>
-              ) : null}
-            </div>
-          </div>
-        </details>
-      ) : null}
+
+                {/* Graph patterns */}
+                {result.graphRows.length > 0 ? (
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 shadow-sm space-y-3">
+                    <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
+                      <span>Graph patterns ({result.graphRowCount} patterns)</span>
+                      {result.graphError ? <span className="text-xs text-red-600">{result.graphError}</span> : null}
+                    </div>
+                    <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
+                      <summary className="cursor-pointer text-sm font-semibold text-gray-900">Pattern data</summary>
+                      {renderTable({ rows: result.graphRows, rowCount: result.graphRowCount })}
+                    </details>
+                  </div>
+                ) : null}
+              </div>
+            </details>
+          </>
+        );
+      })() : null}
 
       {modalId ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
