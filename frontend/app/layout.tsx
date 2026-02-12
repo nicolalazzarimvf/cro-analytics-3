@@ -2,6 +2,7 @@ import "./globals.css";
 import type { ReactNode } from "react";
 import { getServerAuthSession } from "@/lib/auth/server";
 import AppShell from "@/app/components/AppShell";
+import LoginWall from "@/app/components/LoginWall";
 
 export const metadata = {
   title: "CRO Analyst",
@@ -13,6 +14,7 @@ export const metadata = {
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const session = await getServerAuthSession();
+  const isAuthenticated = !!session?.user;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -39,9 +41,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         />
       </head>
       <body className="font-inter antialiased bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
-        <AppShell userEmail={session?.user?.email}>
-          {children}
-        </AppShell>
+        {isAuthenticated ? (
+          <AppShell userEmail={session?.user?.email}>
+            {children}
+          </AppShell>
+        ) : (
+          <LoginWall />
+        )}
       </body>
     </html>
   );

@@ -114,7 +114,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }: Props) {
   }
 
   return (
-    <div className="min-w-fit">
+    <div id="sidebar-wrapper" className="min-w-fit">
       {/* Backdrop (mobile) */}
       <div
         className={`fixed inset-0 bg-gray-900/30 z-40 lg:hidden lg:z-auto transition-opacity duration-200 ${

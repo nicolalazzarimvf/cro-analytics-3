@@ -1,9 +1,10 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useTheme } from "@/app/context/ThemeContext";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
@@ -223,6 +224,24 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
   const [modalId, setModalId] = useState<string | null>(null);
   const [tablePage, setTablePage] = useState(1);
   const [expandedAttrs, setExpandedAttrs] = useState<Set<string>>(new Set());
+
+  // Responsive graph width
+  const graphContainerRef = useRef<HTMLDivElement>(null);
+  const [graphWidth, setGraphWidth] = useState(600);
+  const measureWidth = useCallback(() => {
+    if (graphContainerRef.current) {
+      setGraphWidth(graphContainerRef.current.clientWidth);
+    }
+  }, []);
+  useEffect(() => {
+    measureWidth();
+    window.addEventListener("resize", measureWidth);
+    return () => window.removeEventListener("resize", measureWidth);
+  }, [measureWidth]);
+
+  // Theme-aware graph background
+  const { currentTheme } = useTheme();
+  const graphBg = currentTheme === "dark" ? "#1f2937" : "#ffffff";
 
   // Breakdowns: prefer SQL rows if they have individual experiment data,
   // fall back to graphExperiments (always individual rows), then default rows.
@@ -646,12 +665,12 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                     related experiments below.
                   </p>
                 </div>
-                <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <div ref={graphContainerRef} className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
                   <ForceGraph3D
                     graphData={{ nodes: graphData.nodes, links: graphData.links }}
-                    width={800}
+                    width={graphWidth}
                     height={400}
-                    backgroundColor="transparent"
+                    backgroundColor={graphBg}
                     nodeColor={(node: any) => {
                       if (node.type === "change")
                         return expandedAttrs.has(node.id) ? "#1d4ed8" : "#3b82f6";

@@ -79,12 +79,17 @@ export default async function ExperimentDetail({
     <main className={isBare ? "px-6 py-6" : "mx-auto max-w-4xl px-6 py-10"}>
       {isBare ? (
         <style>{`
-          header,
-          footer {
+          /* Hide sidebar wrapper and dashboard header in bare/popup mode */
+          #sidebar-wrapper,
+          header {
             display: none !important;
           }
-          body {
-            background: white;
+          /* Override body background for bare popup */
+          html.dark body {
+            background: #111827 !important;
+          }
+          html:not(.dark) body {
+            background: #f9fafb !important;
           }
         `}</style>
       ) : null}

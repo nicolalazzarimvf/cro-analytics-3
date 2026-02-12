@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import * as ThreeLib from "three";
+import { useTheme } from "@/app/context/ThemeContext";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
@@ -40,6 +41,24 @@ export default function GraphCard({
   const graphRef = useRef<any>(null);
   const THREE = ThreeLib;
 
+  // Responsive graph width
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [graphWidth, setGraphWidth] = useState(600);
+  const measureWidth = useCallback(() => {
+    if (containerRef.current) {
+      setGraphWidth(containerRef.current.clientWidth);
+    }
+  }, []);
+  useEffect(() => {
+    measureWidth();
+    window.addEventListener("resize", measureWidth);
+    return () => window.removeEventListener("resize", measureWidth);
+  }, [measureWidth]);
+
+  // Theme-aware graph background
+  const { currentTheme } = useTheme();
+  const graphBg = currentTheme === "dark" ? "#1f2937" : "#ffffff";
+
   useEffect(() => {
     if (hasData && graphRef.current) {
       try {
@@ -75,19 +94,19 @@ export default function GraphCard({
           <span className="block h-3 w-3 rounded-sm bg-orange-500" aria-hidden />
           <span>{context === "experiment" ? "This experiment" : "Top winner"}</span>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1">
+        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700/60 px-3 py-1">
           <span className="block h-3 w-3 rounded-full bg-blue-500" aria-hidden />
           <span>Change type</span>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1">
+        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700/60 px-3 py-1">
           <span className="block h-3 w-3 rounded-full bg-emerald-500" aria-hidden />
           <span>Element</span>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1">
+        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700/60 px-3 py-1">
           <span className="block h-3 w-3 rounded-full bg-purple-500" aria-hidden />
           <span>Vertical / Geo / Brand / Metric</span>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1">
+        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700/60 px-3 py-1">
           <span className="block h-3 w-3 rounded-full bg-gray-500" aria-hidden />
           <span>Similar experiments</span>
         </div>
@@ -99,13 +118,13 @@ export default function GraphCard({
         </div>
       ) : (
         <>
-          <div className="relative mt-4 h-[440px] w-full overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div ref={containerRef} className="relative mt-4 h-[440px] w-full overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
             <ForceGraph3D
               ref={graphRef}
               graphData={data}
-              width={800}
+              width={graphWidth}
               height={420}
-              backgroundColor="transparent"
+              backgroundColor={graphBg}
               controlType="orbit"
               enableNavigationControls
               showNavInfo={false}
