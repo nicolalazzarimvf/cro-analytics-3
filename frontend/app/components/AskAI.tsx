@@ -40,20 +40,24 @@ function ThinkingDots() {
   );
 }
 
+type GNode = { id: string; label: string; type: string; uuid?: string; title?: string };
+type GLink = { source: string; target: string };
+
 /**
- * Build a single combined 3D graph showing experiments connected to their
- * changeType and elementChanged attributes. Experiments that share the same
- * attribute naturally cluster together.
+ * Build graph data that starts with attribute nodes (changeType ↔ elementChanged)
+ * and can be expanded to show individual experiments when an attribute is clicked.
+ *
+ * `expandedAttrs` tracks which attribute node IDs have been expanded.
  */
 function buildCombinedGraphData(
   sqlRows: Record<string, any>[],
   graphRows: Record<string, any>[],
+  expandedAttrs: Set<string>,
 ) {
-  type GNode = { id: string; label: string; type: string; uuid?: string; title?: string };
   const nodesMap = new Map<string, GNode>();
-  const links: Array<{ source: string; target: string }> = [];
+  const links: GLink[] = [];
 
-  // Build a set of pattern counts for sizing attribute nodes
+  // Pattern counts for sizing attribute nodes
   const patternCounts = new Map<string, number>();
   for (const r of graphRows) {
     const ct = (r.changeType ?? "").toString().trim();
@@ -63,65 +67,66 @@ function buildCombinedGraphData(
     if (el) patternCounts.set(`el:${el}`, (patternCounts.get(`el:${el}`) ?? 0) + cnt);
   }
 
-  // Add experiment rows as nodes (limit to 30 for performance)
-  const experiments = sqlRows
-    .filter((r) => r && r.experimentId)
-    .slice(0, 30);
-
-  for (const exp of experiments) {
-    const expId = (exp.experimentId ?? "").toString().trim();
-    if (!expId || nodesMap.has(expId)) continue;
-
-    nodesMap.set(expId, {
-      id: expId,
-      label: expId,
-      type: "experiment",
-      uuid: exp.id?.toString(),
-      title: exp.testName?.toString() ?? undefined,
-    });
-
-    // Link experiment to its changeType
-    const ct = (exp.changeType ?? "").toString().trim();
-    if (ct) {
-      const ctKey = `ct:${ct}`;
-      if (!nodesMap.has(ctKey)) {
-        nodesMap.set(ctKey, { id: ctKey, label: ct, type: "change" });
-      }
-      links.push({ source: expId, target: ctKey });
-    }
-
-    // Link experiment to its elementChanged
-    const el = (exp.elementChanged ?? "").toString().trim();
-    if (el) {
-      const elKey = `el:${el}`;
-      if (!nodesMap.has(elKey)) {
-        nodesMap.set(elKey, { id: elKey, label: el, type: "element" });
-      }
-      links.push({ source: expId, target: elKey });
+  // 1. Build attribute nodes from graph patterns (always shown)
+  const seenLinks = new Set<string>();
+  for (const r of graphRows.slice(0, 30)) {
+    const ct = (r.changeType ?? "").toString().trim();
+    const el = (r.elementChanged ?? "").toString().trim();
+    if (!ct || !el) continue;
+    const ctKey = `ct:${ct}`;
+    const elKey = `el:${el}`;
+    if (!nodesMap.has(ctKey)) nodesMap.set(ctKey, { id: ctKey, label: ct, type: "change" });
+    if (!nodesMap.has(elKey)) nodesMap.set(elKey, { id: elKey, label: el, type: "element" });
+    const linkKey = `${ctKey}->${elKey}`;
+    if (!seenLinks.has(linkKey)) {
+      seenLinks.add(linkKey);
+      links.push({ source: ctKey, target: elKey });
     }
   }
 
-  // If SQL rows don't have changeType/elementChanged, fall back to graph-only pattern nodes
-  if (links.length === 0 && graphRows.length > 0) {
-    for (const r of graphRows.slice(0, 20)) {
-      const ct = (r.changeType ?? "").toString().trim();
-      const el = (r.elementChanged ?? "").toString().trim();
-      if (!ct || !el) continue;
-      const ctKey = `ct:${ct}`;
-      const elKey = `el:${el}`;
-      if (!nodesMap.has(ctKey)) nodesMap.set(ctKey, { id: ctKey, label: ct, type: "change" });
-      if (!nodesMap.has(elKey)) nodesMap.set(elKey, { id: elKey, label: el, type: "element" });
-      links.push({ source: ctKey, target: elKey });
+  // 2. For each expanded attribute, add matching experiments from SQL rows
+  if (expandedAttrs.size > 0) {
+    const experiments = sqlRows.filter((r) => r && r.experimentId).slice(0, 50);
+    for (const exp of experiments) {
+      const expId = (exp.experimentId ?? "").toString().trim();
+      if (!expId) continue;
+
+      const ct = (exp.changeType ?? "").toString().trim();
+      const el = (exp.elementChanged ?? "").toString().trim();
+      const ctKey = ct ? `ct:${ct}` : "";
+      const elKey = el ? `el:${el}` : "";
+
+      // Only add this experiment if one of its attributes is expanded
+      const matchesCt = ctKey && expandedAttrs.has(ctKey);
+      const matchesEl = elKey && expandedAttrs.has(elKey);
+      if (!matchesCt && !matchesEl) continue;
+
+      if (!nodesMap.has(expId)) {
+        nodesMap.set(expId, {
+          id: expId,
+          label: expId,
+          type: "experiment",
+          uuid: exp.id?.toString(),
+          title: exp.testName?.toString() ?? undefined,
+        });
+      }
+
+      // Link to changeType
+      if (ctKey && nodesMap.has(ctKey)) {
+        const lk = `${expId}->${ctKey}`;
+        if (!seenLinks.has(lk)) { seenLinks.add(lk); links.push({ source: expId, target: ctKey }); }
+      }
+      // Link to elementChanged
+      if (elKey && nodesMap.has(elKey)) {
+        const lk = `${expId}->${elKey}`;
+        if (!seenLinks.has(lk)) { seenLinks.add(lk); links.push({ source: expId, target: elKey }); }
+      }
     }
   }
 
   if (nodesMap.size < 2) return null;
 
-  return {
-    nodes: Array.from(nodesMap.values()),
-    links,
-    patternCounts,
-  };
+  return { nodes: Array.from(nodesMap.values()), links, patternCounts };
 }
 
 export default function AskAI() {
@@ -131,6 +136,7 @@ export default function AskAI() {
   const [result, setResult] = useState<AskResponse | null>(null);
   const [modalId, setModalId] = useState<string | null>(null);
   const [tablePage, setTablePage] = useState(1);
+  const [expandedAttrs, setExpandedAttrs] = useState<Set<string>>(new Set());
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,6 +169,7 @@ export default function AskAI() {
           graphError: json.graphError,
         });
         setTablePage(1);
+        setExpandedAttrs(new Set());
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed");
@@ -484,7 +491,8 @@ export default function AskAI() {
         </div>
       ) : null}
       {result ? (() => {
-        const graphData = buildCombinedGraphData(result.rows, result.graphRows);
+        const graphData = buildCombinedGraphData(result.rows, result.graphRows, expandedAttrs);
+        const expCount = graphData?.nodes.filter((n) => n.type === "experiment").length ?? 0;
         return (
           <>
             {/* Combined graph — shown directly below the answer */}
@@ -493,7 +501,7 @@ export default function AskAI() {
                 <div>
                   <div className="text-sm font-semibold text-gray-900">Experiment graph</div>
                   <p className="text-xs text-gray-500">
-                    Experiments linked to their change type and element. Click an experiment to view details.
+                    Click a <span className="font-semibold text-blue-600">change type</span> or <span className="font-semibold text-emerald-600">element</span> node to reveal related experiments. Click an experiment to view details.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
@@ -506,6 +514,15 @@ export default function AskAI() {
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
                     <span className="block h-2.5 w-2.5 rounded-full bg-emerald-500" /> Element
                   </span>
+                  {expandedAttrs.size > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedAttrs(new Set())}
+                      className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 hover:bg-gray-200"
+                    >
+                      Collapse all ({expCount} experiments shown)
+                    </button>
+                  ) : null}
                 </div>
                 <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 bg-white">
                   <ForceGraph3D
@@ -514,22 +531,22 @@ export default function AskAI() {
                     height={400}
                     backgroundColor="#ffffff"
                     nodeColor={(node: any) => {
-                      switch (node.type) {
-                        case "experiment": return "#f97316";
-                        case "change": return "#3b82f6";
-                        case "element": return "#10b981";
-                        default: return "#6b7280";
-                      }
+                      if (node.type === "experiment") return "#f97316";
+                      // Highlight expanded attribute nodes
+                      const isExpanded = expandedAttrs.has(node.id);
+                      if (node.type === "change") return isExpanded ? "#1d4ed8" : "#3b82f6";
+                      if (node.type === "element") return isExpanded ? "#059669" : "#10b981";
+                      return "#6b7280";
                     }}
                     nodeLabel={(n: any) => {
                       if (n.type === "experiment") return `${n.label}${n.title ? ` — ${n.title}` : ""}`;
-                      return n.label;
+                      const cnt = graphData.patternCounts.get(n.id) ?? 0;
+                      const expanded = expandedAttrs.has(n.id);
+                      return `${n.label} (${cnt} experiments)${expanded ? " — click to collapse" : " — click to expand"}`;
                     }}
                     nodeVal={(n: any) => {
                       if (n.type === "experiment") return 3;
-                      // Size attribute nodes by how many experiments use them
-                      const key = n.id;
-                      const cnt = graphData.patternCounts.get(key) ?? 1;
+                      const cnt = graphData.patternCounts.get(n.id) ?? 1;
                       return Math.max(4, Math.min(14, cnt * 0.8));
                     }}
                     linkWidth={1.5}
@@ -538,8 +555,22 @@ export default function AskAI() {
                     warmupTicks={30}
                     cooldownTicks={100}
                     onNodeClick={(node: any) => {
-                      if (node.type === "experiment" && node.uuid) {
-                        setModalId(node.uuid);
+                      if (node.type === "experiment") {
+                        // Open experiment detail
+                        if (node.uuid) setModalId(node.uuid);
+                        return;
+                      }
+                      // Toggle expand/collapse for attribute nodes
+                      if (node.type === "change" || node.type === "element") {
+                        setExpandedAttrs((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(node.id)) {
+                            next.delete(node.id);
+                          } else {
+                            next.add(node.id);
+                          }
+                          return next;
+                        });
                       }
                     }}
                   />
