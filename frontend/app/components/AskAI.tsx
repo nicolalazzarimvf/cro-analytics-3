@@ -153,7 +153,12 @@ function computeBreakdowns(rows: Record<string, any>[]) {
 
 /* ── Main component ── */
 
-export default function AskAI() {
+type AskAIProps = {
+  defaultRows?: Record<string, any>[];
+  defaultLabel?: string;
+};
+
+export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -162,10 +167,16 @@ export default function AskAI() {
   const [tablePage, setTablePage] = useState(1);
   const [expandedAttrs, setExpandedAttrs] = useState<Set<string>>(new Set());
 
+  // Breakdowns: from query result, or from server-provided default rows
   const breakdowns = useMemo(() => {
-    if (!result?.rows?.length) return null;
-    return computeBreakdowns(result.rows);
-  }, [result]);
+    if (result?.rows?.length) return computeBreakdowns(result.rows);
+    if (defaultRows?.length) return computeBreakdowns(defaultRows);
+    return null;
+  }, [result, defaultRows]);
+
+  // Which rows to use for the experiments table (query result or default)
+  const activeRows = result?.rows?.length ? result.rows : defaultRows ?? [];
+  const activeLabel = result ? "Query results" : defaultLabel ?? "Previous month";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,8 +226,8 @@ export default function AskAI() {
 
   /* ── Experiments table ── */
   const renderExperimentsTable = () => {
-    if (!result?.rows?.length) return null;
-    const rows = result.rows;
+    if (!activeRows.length) return null;
+    const rows = activeRows;
     // Only show if rows have experimentId (individual experiment rows, not aggregates)
     if (!rows[0]?.experimentId) return null;
 
@@ -236,7 +247,7 @@ export default function AskAI() {
       <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 className="text-base font-semibold text-gray-900">
-            Experiments ({rows.length})
+            Experiments — {activeLabel} ({rows.length})
           </h2>
           {totalPages > 1 ? (
             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -361,14 +372,22 @@ export default function AskAI() {
         ) : null}
       </div>
 
-      {/* ── Empty state ── */}
-      {!result && !loading && !error ? (
+      {/* ── Empty state (only when no default data and no result) ── */}
+      {!result && !loading && !error && !defaultRows?.length ? (
         <div className="mt-8 flex flex-col items-center justify-center py-16 text-center">
           <div className="text-4xl text-gray-300">?</div>
           <p className="mt-3 text-sm text-gray-500 max-w-md">
             Ask a question above to explore experiment data. The results will appear here with
             breakdowns by vertical, geo, winners, and a full experiment table.
           </p>
+        </div>
+      ) : null}
+
+      {/* ── Default data header ── */}
+      {!result && defaultRows?.length ? (
+        <div className="mt-6 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+          Showing <span className="font-semibold">{defaultLabel}</span> recap ({defaultRows.length} experiments).
+          Ask a question above to explore specific data.
         </div>
       ) : null}
 
@@ -832,9 +851,6 @@ export default function AskAI() {
               </div>
             ) : null}
 
-            {/* Experiments table */}
-            {renderExperimentsTable()}
-
             {/* Collapsible source data */}
             <details className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
               <summary className="cursor-pointer text-sm font-semibold text-gray-900">
@@ -865,6 +881,9 @@ export default function AskAI() {
           </>
         );
       })() : null}
+
+      {/* ── Experiments table (works for both query results and default rows) ── */}
+      {renderExperimentsTable()}
 
       {/* ── Experiment detail modal ── */}
       {modalId ? (

@@ -140,8 +140,8 @@ function normalizeDateSub(sql: string) {
 }
 
 /**
- * Ensure essential columns are present in the SELECT so the graph can link
- * experiments to their changeType and elementChanged attributes.
+ * Ensure essential columns are present in the SELECT so the UI can build
+ * breakdowns (vertical, geo, winners) and the graph (changeType, elementChanged).
  */
 function ensureGraphColumns(sql: string) {
   // Only inject into simple SELECTs from the Experiment table (not sub-selects or GROUP BY aggregations)
@@ -154,6 +154,11 @@ function ensureGraphColumns(sql: string) {
     { name: "changeType", quoted: '"changeType"' },
     { name: "elementChanged", quoted: '"elementChanged"' },
     { name: "testName", quoted: '"testName"' },
+    { name: "vertical", quoted: '"vertical"' },
+    { name: "geo", quoted: '"geo"' },
+    { name: "winningVar", quoted: '"winningVar"' },
+    { name: "monthlyExtrap", quoted: '"monthlyExtrap"' },
+    { name: "dateConcluded", quoted: '"dateConcluded"' },
   ];
 
   let result = sql;
