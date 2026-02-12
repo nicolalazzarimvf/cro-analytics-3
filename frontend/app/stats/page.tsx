@@ -12,7 +12,7 @@ function formatMonthLabel(date: Date) {
 
 function pctChange(a: number, b: number) {
   if (b === 0) return a > 0 ? 100 : 0;
-  return Math.round(((a - b) / b) * 100);
+  return Math.round(((a - b) / Math.abs(b)) * 100);
 }
 
 export default async function StatsPage() {
