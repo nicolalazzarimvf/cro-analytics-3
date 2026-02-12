@@ -724,23 +724,6 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                     related experiments below.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
-                    <span className="block h-2.5 w-2.5 rounded-full bg-blue-500" /> Change type
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
-                    <span className="block h-2.5 w-2.5 rounded-full bg-emerald-500" /> Element
-                  </span>
-                  {expandedAttrs.size > 0 ? (
-                    <button
-                      type="button"
-                      onClick={() => setExpandedAttrs(new Set())}
-                      className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 hover:bg-gray-200"
-                    >
-                      Clear selection
-                    </button>
-                  ) : null}
-                </div>
                 <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 bg-white">
                   <ForceGraph3D
                     graphData={{ nodes: graphData.nodes, links: graphData.links }}
@@ -756,8 +739,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                     }}
                     nodeLabel={(n: any) => {
                       const cnt = graphData.patternCounts.get(n.id) ?? 0;
-                      const selected = expandedAttrs.has(n.id);
-                      return `${n.label} (${cnt} experiments)${selected ? " ✓" : ""}`;
+                      return `${n.label} (${cnt} experiments)`;
                     }}
                     nodeVal={(n: any) => {
                       const cnt = graphData.patternCounts.get(n.id) ?? 1;
@@ -768,31 +750,91 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                     linkDirectionalParticleSpeed={0.005}
                     warmupTicks={30}
                     cooldownTicks={100}
-                    onNodeClick={(node: any) => {
-                      console.log(`[Graph] Node clicked:`, {
-                        id: node.id,
-                        type: node.type,
-                        label: node.label,
-                      });
-                      if (node.type === "change" || node.type === "element") {
-                        const matchingExps = getExperimentsForAttr(
-                          node.id,
-                          result.graphExperiments,
-                        );
-                        console.log(
-                          `[Graph] Matching experiments for "${node.id}":`,
-                          matchingExps.length,
-                        );
-                        setExpandedAttrs((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(node.id)) next.delete(node.id);
-                          else next.add(node.id);
-                          return next;
-                        });
-                      }
-                    }}
                   />
                 </div>
+
+                {/* Clickable attribute chips — replaces unreliable 3D node clicks */}
+                {(() => {
+                  const changeNodes = graphData.nodes.filter((n) => n.type === "change");
+                  const elementNodes = graphData.nodes.filter((n) => n.type === "element");
+                  const toggleAttr = (id: string) => {
+                    setExpandedAttrs((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(id)) next.delete(id);
+                      else next.add(id);
+                      return next;
+                    });
+                  };
+                  return (
+                    <div className="space-y-2">
+                      {changeNodes.length > 0 ? (
+                        <div>
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Change types</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {changeNodes.map((n) => {
+                              const cnt = graphData.patternCounts.get(n.id) ?? 0;
+                              const selected = expandedAttrs.has(n.id);
+                              return (
+                                <button
+                                  key={n.id}
+                                  type="button"
+                                  onClick={() => toggleAttr(n.id)}
+                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                                    selected
+                                      ? "bg-blue-600 text-white shadow-sm"
+                                      : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+                                  }`}
+                                >
+                                  {n.label}
+                                  <span className={`text-[10px] ${selected ? "text-blue-200" : "text-blue-400"}`}>
+                                    {cnt}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                      {elementNodes.length > 0 ? (
+                        <div>
+                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Elements</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {elementNodes.map((n) => {
+                              const cnt = graphData.patternCounts.get(n.id) ?? 0;
+                              const selected = expandedAttrs.has(n.id);
+                              return (
+                                <button
+                                  key={n.id}
+                                  type="button"
+                                  onClick={() => toggleAttr(n.id)}
+                                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                                    selected
+                                      ? "bg-emerald-600 text-white shadow-sm"
+                                      : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                                  }`}
+                                >
+                                  {n.label}
+                                  <span className={`text-[10px] ${selected ? "text-emerald-200" : "text-emerald-400"}`}>
+                                    {cnt}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
+                      {expandedAttrs.size > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedAttrs(new Set())}
+                          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                        >
+                          Clear all selections
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })()}
 
                 {/* Experiments panel — appears below the graph when a node is selected */}
                 {uniqueExps.length > 0 ? (
