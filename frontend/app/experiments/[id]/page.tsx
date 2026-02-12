@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/client";
 import { ScreenshotList } from "./ScreenshotList";
-import Neo4jGraphCard, { type Neo4jGraphData } from "@/app/stats/Neo4jGraphCard";
-import { getNeo4jSession } from "@/lib/neo4j/client";
+import GraphCard, { type GraphData } from "@/app/stats/GraphCard";
+import { buildExperimentGraph } from "@/lib/graph/postgres";
 
 function formatDate(value: Date | null) {
   if (!value) return "—";
@@ -58,148 +58,20 @@ export default async function ExperimentDetail({
     notFound();
   }
 
-  let graphData: Neo4jGraphData | null = null;
+  let graphData: GraphData | null = null;
   let graphError: string | null = null;
   if (experiment.experimentId) {
-    const normalizeExpId = (v: string | null | undefined) => (v ?? "").trim();
     try {
-      const session = await getNeo4jSession();
-      try {
-        const query = `
-          MATCH (e:Experiment {experimentId: $experimentId})
-          OPTIONAL MATCH (e)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)
-          OPTIONAL MATCH (e)-[:CHANGED_ELEMENT]->(el:ElementChanged)
-          OPTIONAL MATCH (e)-[:IN_VERTICAL]->(v:Vertical)
-          OPTIONAL MATCH (e)-[:IN_GEO]->(g:Geo)
-          OPTIONAL MATCH (e)-[:FOR_BRAND]->(b:Brand)
-          OPTIONAL MATCH (e)-[:TARGETS]->(tm:TargetMetric)
-          OPTIONAL MATCH (e)-[:SIMILAR_TO]->(other:Experiment)
-          WITH e, collect(DISTINCT ct) AS changeTypes, collect(DISTINCT el) AS elements,
-               collect(DISTINCT v) AS verticals, collect(DISTINCT g) AS geos,
-               collect(DISTINCT b) AS brands, collect(DISTINCT tm) AS metrics,
-               collect(DISTINCT other)[0..6] AS closest
-          RETURN e, changeTypes, elements, verticals, geos, brands, metrics, closest
-        `;
-        const result = await session.run(query, { experimentId: experiment.experimentId });
-        if (result.records.length) {
-          const record = result.records[0];
-          const eNode = record.get("e") as any;
-          const changeTypes = (record.get("changeTypes") as any[]) ?? [];
-          const elements = (record.get("elements") as any[]) ?? [];
-          const verticals = (record.get("verticals") as any[]) ?? [];
-          const geos = (record.get("geos") as any[]) ?? [];
-          const brands = (record.get("brands") as any[]) ?? [];
-          const metrics = (record.get("metrics") as any[]) ?? [];
-          let closest = (record.get("closest") as any[]) ?? [];
-
-          if (!closest.length) {
-            const fallbackClosest = await session.run(
-              `
-              MATCH (e:Experiment {experimentId: $experimentId})
-              OPTIONAL MATCH (e)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)<-[:HAS_CHANGE_TYPE]-(other:Experiment)
-              WHERE other <> e
-              WITH collect(DISTINCT other)[0..6] AS closest
-              RETURN closest
-              `,
-              { experimentId: experiment.experimentId }
-            );
-            if (fallbackClosest.records.length) {
-              closest = (fallbackClosest.records[0].get("closest") as any[]) ?? [];
-            }
-          }
-
-          const closestIds = closest
-            .map((n) => normalizeExpId(n?.properties?.experimentId as string | undefined))
-            .filter(Boolean);
-          const lookupIds = Array.from(
-            new Set([normalizeExpId(experiment.experimentId), ...closestIds].filter(Boolean))
-          );
-          const metaRows = lookupIds.length
-            ? await prisma.experiment.findMany({
-                where: { experimentId: { in: lookupIds } },
-                select: { id: true, experimentId: true, testName: true }
-              })
-            : [];
-          const metaMap = new Map<
-            string,
-            { experimentId: string; id: string; testName: string | null }
-          >(
-            metaRows.map((row: { experimentId: string; id: string; testName: string | null }) => [
-              normalizeExpId(row.experimentId),
-              row
-            ])
-          );
-
-          const nodesMap = new Map<
-            string,
-            {
-              id: string;
-              label: string;
-              type: string;
-              count: number;
-              primary?: boolean;
-              href?: string;
-              title?: string;
-            }
-          >();
-          const links: Neo4jGraphData["links"] = [];
-
-          const expId = normalizeExpId(
-            (eNode?.properties?.experimentId as string | undefined) ?? experiment.experimentId
-          );
-          nodesMap.set(expId, {
-            id: expId,
-            label: expId,
-            type: "experiment",
-            count: 3,
-            primary: true,
-            href: metaMap.get(expId)?.id ? `/experiments/${metaMap.get(expId)!.id}?from=experiments` : undefined,
-            title: metaMap.get(expId)?.testName ?? experiment.testName ?? undefined
-          });
-
-          const pushNode = (node: any, type: string) => {
-            const name = (node?.properties?.name as string | undefined)?.trim();
-            if (!name) return;
-            const normalizedType = type.toLowerCase();
-            if (!nodesMap.has(name)) {
-              nodesMap.set(name, { id: name, label: name, type: normalizedType, count: 1 });
-            }
-            links.push({ source: expId, target: name, value: 2 });
-          };
-
-          changeTypes.forEach((n) => pushNode(n, "change"));
-          elements.forEach((n) => pushNode(n, "element"));
-          verticals.forEach((n) => pushNode(n, "vertical"));
-          geos.forEach((n) => pushNode(n, "geo"));
-          brands.forEach((n) => pushNode(n, "brand"));
-          metrics.forEach((n) => pushNode(n, "metric"));
-
-          closest.forEach((n) => {
-            const otherId = normalizeExpId(n?.properties?.experimentId as string | undefined);
-            if (!otherId) return;
-            const meta = metaMap.get(otherId);
-            if (!nodesMap.has(otherId)) {
-              nodesMap.set(otherId, {
-                id: otherId,
-                label: otherId,
-                type: "experiment",
-                count: 2,
-                href: meta ? `/experiments/${meta.id}?from=experiments` : undefined,
-                title: meta?.testName ?? undefined
-              });
-            }
-            links.push({ source: expId, target: otherId, value: 3 });
-          });
-
-          if (links.length) {
-            graphData = { nodes: Array.from(nodesMap.values()), links };
-          }
-        }
-      } finally {
-        await session.close();
+      const result = await buildExperimentGraph(
+        experiment.experimentId,
+        "experiment",
+        6
+      );
+      if (result.nodes.length && result.links.length) {
+        graphData = result;
       }
     } catch (err) {
-      graphError = err instanceof Error ? err.message : "Unable to load Neo4j data";
+      graphError = err instanceof Error ? err.message : "Unable to load graph data";
     }
   }
 
@@ -320,10 +192,10 @@ export default async function ExperimentDetail({
       </div>
 
       <div className="mt-8">
-        <Neo4jGraphCard
+        <GraphCard
           data={graphData}
           error={graphError}
-          title="Neo4j connections for this experiment"
+          title="Connections for this experiment"
           subtitle="Direct relations and similar experiments"
           context="experiment"
         />

@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
@@ -12,7 +13,6 @@ type AskResult = {
   modeUsed: "sql" | "graph";
   answer?: string;
   sql?: string;
-  cypher?: string;
   notes?: string;
   rows: Record<string, any>[];
   rowCount: number;
@@ -299,7 +299,7 @@ export default function AskAI() {
     }
     return {
       kind: "graph" as const,
-      cypher: json.cypher,
+      sql: json.sql,
       rows: json.rows || [],
       rowCount: json.rowCount ?? (json.rows ? json.rows.length : 0),
       truncated: json.truncated ?? false,
@@ -333,7 +333,6 @@ export default function AskAI() {
           modeUsed,
           answer: json.answer,
           sql: json.sql,
-          cypher: json.cypher,
           notes: json.notes,
           rows: json.rows ?? [],
           rowCount,
@@ -352,7 +351,7 @@ export default function AskAI() {
 
   const renderTable = (res: AskResult) => {
     if (!res?.rows?.length) return null;
-    // If rows contain a Neo4j payload (identity/labels/properties), flatten to properties for display.
+    // If rows contain a graph payload (identity/labels/properties), flatten to properties for display.
     const normalizedRows = res.rows.map((row) => {
       if (row && typeof row === "object" && "properties" in row && row.properties && typeof row.properties === "object") {
         return row.properties as Record<string, unknown>;
@@ -534,7 +533,7 @@ export default function AskAI() {
         <div>
           <h2 className="text-base font-semibold text-gray-900">Ask the data</h2>
           <p className="text-sm text-gray-600">
-            Ask anything about experiments; we’ll query the DB (and graph when relevant) and summarise.
+            Ask anything about experiments; we'll query the database and summarise.
           </p>
         </div>
       </div>
@@ -548,7 +547,7 @@ export default function AskAI() {
             onChange={() => setMode("auto")}
             className="h-4 w-4 accent-brand-600"
           />
-          Auto (SQL + Graph when needed)
+          Auto (best mode)
         </label>
         <label className="flex items-center gap-1">
           <input
@@ -559,7 +558,7 @@ export default function AskAI() {
             onChange={() => setMode("sql")}
             className="h-4 w-4 accent-brand-600"
           />
-          SQL (Postgres only)
+          SQL (Postgres)
         </label>
         <label className="flex items-center gap-1">
           <input
@@ -570,7 +569,7 @@ export default function AskAI() {
             onChange={() => setMode("graph")}
             className="h-4 w-4 accent-brand-600"
           />
-          Graph (Neo4j only)
+          Graph (pattern analysis)
         </label>
       </div>
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
@@ -591,8 +590,110 @@ export default function AskAI() {
       </form>
       {error ? <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
       {combinedAnswer ? (
-        <div className="mt-4 rounded-xl border border-brand-100 bg-brand-50 px-3 py-3 text-sm text-gray-900 whitespace-pre-wrap">
-          {combinedAnswer}
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm ai-response">
+          <style jsx global>{`
+            .ai-response h2 {
+              margin-top: 1.5rem;
+              margin-bottom: 0.75rem;
+              font-size: 1.125rem;
+              font-weight: 700;
+              color: #111827;
+              border-bottom: 1px solid #f3f4f6;
+              padding-bottom: 0.5rem;
+            }
+            .ai-response h2:first-child { margin-top: 0; }
+            .ai-response h3 {
+              margin-top: 1rem;
+              margin-bottom: 0.5rem;
+              font-size: 1rem;
+              font-weight: 600;
+              color: #1f2937;
+            }
+            .ai-response h4 {
+              margin-top: 0.75rem;
+              margin-bottom: 0.25rem;
+              font-size: 0.875rem;
+              font-weight: 600;
+              color: #374151;
+            }
+            .ai-response p {
+              margin-bottom: 0.5rem;
+              font-size: 0.875rem;
+              color: #374151;
+              line-height: 1.625;
+            }
+            .ai-response ul {
+              margin-bottom: 0.75rem;
+              padding-left: 0;
+              list-style: none;
+            }
+            .ai-response ul li {
+              display: flex;
+              align-items: flex-start;
+              gap: 0.5rem;
+              font-size: 0.875rem;
+              color: #374151;
+              margin-bottom: 0.375rem;
+            }
+            .ai-response ul li::before {
+              content: "•";
+              color: #465fff;
+              font-weight: 600;
+              flex-shrink: 0;
+              margin-top: 0.125rem;
+            }
+            .ai-response ol {
+              margin-bottom: 0.75rem;
+              padding-left: 0;
+              list-style: none;
+              counter-reset: ol-counter;
+            }
+            .ai-response ol li {
+              display: flex;
+              align-items: flex-start;
+              gap: 0.5rem;
+              font-size: 0.875rem;
+              color: #374151;
+              margin-bottom: 0.375rem;
+              counter-increment: ol-counter;
+            }
+            .ai-response ol li::before {
+              content: counter(ol-counter) ".";
+              color: #465fff;
+              font-weight: 600;
+              flex-shrink: 0;
+              min-width: 1.25rem;
+            }
+            .ai-response strong {
+              font-weight: 600;
+              color: #111827;
+            }
+            .ai-response em {
+              font-style: italic;
+              color: #6b7280;
+            }
+            .ai-response code {
+              background: #f3f4f6;
+              padding: 0.125rem 0.375rem;
+              border-radius: 0.25rem;
+              font-size: 0.75rem;
+              font-family: monospace;
+            }
+            .ai-response blockquote {
+              border-left: 4px solid #93c5fd;
+              background: #eff6ff;
+              padding: 0.5rem 1rem;
+              margin: 0.75rem 0;
+              font-style: italic;
+              color: #374151;
+            }
+            .ai-response hr {
+              margin: 1rem 0;
+              border: none;
+              border-top: 1px solid #e5e7eb;
+            }
+          `}</style>
+          <ReactMarkdown>{combinedAnswer}</ReactMarkdown>
         </div>
       ) : null}
       {result ? (
@@ -614,10 +715,10 @@ export default function AskAI() {
                   <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{result.sql}</pre>
                 </details>
               ) : null}
-              {result.modeUsed === "graph" && result.cypher ? (
+              {result.modeUsed === "graph" && result.sql ? (
                 <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
-                  <summary className="cursor-pointer text-sm font-semibold text-gray-900">Cypher used</summary>
-                  <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{result.cypher}</pre>
+                  <summary className="cursor-pointer text-sm font-semibold text-gray-900">Graph SQL used</summary>
+                  <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{result.sql}</pre>
                 </details>
               ) : null}
                   {result.modeUsed === "graph" ? (

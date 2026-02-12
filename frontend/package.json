@@ -18,21 +18,22 @@
     "ai:test": "tsx scripts/run-ai-queries.ts",
     "ai:embed": "tsx scripts/embed-experiments.ts --limit 50",
     "ai:embed:all": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/embed-experiments.ts --limit 0",
-    "neo4j:test": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/test-neo4j.ts",
-    "neo4j:sync": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/sync-neo4j.ts",
-    "db:test": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/test-db.ts"
+    "db:test": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx scripts/test-db.ts",
+    "eval": "DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx evals/run.ts",
+    "eval:prod": "AI_TEST_ENDPOINT=https://cro-analyst-v3.vercel.app/api/ai/query DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx evals/run.ts",
+    "eval:ci": "EVAL_CI_MODE=true AI_TEST_ENDPOINT=https://cro-analyst-v3.vercel.app/api/ai/query DOTENV_CONFIG_PATH=.env.local NODE_OPTIONS='-r dotenv/config' tsx evals/run.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.1.0",
     "@prisma/client": "^7.1.0",
     "csv-parse": "^6.1.0",
-    "neo4j-driver": "^5.23.0",
     "next": "^15.0.0",
     "next-auth": "^4.24.13",
     "pg": "^8.16.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-force-graph-3d": "^1.29.0",
+    "react-markdown": "^10.1.0",
     "three": "^0.170.0"
   },
   "devDependencies": {
@@ -42,6 +43,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "dotenv": "^16.6.1",
+    "openai": "^6.17.0",
     "prisma": "^7.1.0",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.20.0",

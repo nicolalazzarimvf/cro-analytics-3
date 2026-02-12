@@ -34,7 +34,8 @@ export default function HowItWorksPage() {
             Data is cleaned and stored in Postgres (dates, outcomes, change types, screenshots, extrapolation, embeddings).
           </li>
           <li>
-            Experiments are mirrored into Neo4j so we can surface relationships (change type, element, vertical, geo, brand, metric).
+            Graph relationships (change type, element, vertical, geo, brand, metric, similar experiments) are computed
+            directly from Postgres — no external graph database needed.
           </li>
           <li>
             Ask AI uses the same fresh data; nothing is cached in the browser.
@@ -47,7 +48,7 @@ export default function HowItWorksPage() {
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
           <li>
             <strong>Stats:</strong> Shows last completed month (or most recent data), top winners, geo/vertical breakdowns,
-            and the Neo4j 3D graph. Pagination controls appear above and below the experiments table.
+            and a 3D relationship graph. Pagination controls appear above and below the experiments table.
           </li>
           <li>
             <strong>Experiments:</strong> Listing with search/filter and detail pages. Back links remember whether you
@@ -59,8 +60,8 @@ export default function HowItWorksPage() {
             vertical/geo/brand/metric (purple), similar experiments (gray).
           </li>
           <li>
-            <strong>Ask AI:</strong> Auto mode chooses SQL vs graph; shows animated “Thinking…” while fetching, and
-            exposes the generated SQL/Cypher for transparency.
+            <strong>Ask AI:</strong> Auto mode chooses SQL vs graph pattern analysis; shows animated "Thinking…" while fetching, and
+            exposes the generated SQL for transparency.
           </li>
         </ul>
       </section>
@@ -69,8 +70,8 @@ export default function HowItWorksPage() {
         <h2 className="text-xl font-semibold text-gray-900">How Ask AI works</h2>
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
           <li>For data questions, we generate SQL, sanitize it (read-only, quoted, limited), and run it on Postgres.</li>
-          <li>For relationship questions, we generate Cypher to query Neo4j and return patterns (change type → element, etc.).</li>
-          <li>We show the SQL/Cypher used so you can trust and reuse the query.</li>
+          <li>For relationship/pattern questions, we aggregate data from Postgres (change type → element, etc.) and visualise them.</li>
+          <li>We show the SQL used so you can trust and reuse the query.</li>
         </ul>
       </section>
 
@@ -89,8 +90,8 @@ export default function HowItWorksPage() {
             <strong>Database:</strong> Prisma on Postgres (SSL). <code>Experiment</code> holds dates, outcomes, change types, elements, screenshots, extrapolation, embeddings.
           </li>
           <li>
-            <strong>Graph:</strong> Experiments in Neo4j linked to ChangeType, ElementChanged, Vertical, Geo, Brand, TargetMetric.
-            Similar experiments from <code>SIMILAR_TO</code> or overlap on change types/elements/vertical/geo/brand/metric.
+            <strong>Graph:</strong> Experiment relationships (change type, element, vertical, geo, brand, metric) and similarity
+            are computed from Postgres. Similar experiments are ranked by attribute overlap count and monthly impact.
           </li>
           <li>
             <strong>Ops:</strong> Vercel cron (daily) hits <code>/api/import/auto</code>; <code>/api/health</code> for readiness; errors surface in Vercel logs.

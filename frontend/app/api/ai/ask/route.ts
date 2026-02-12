@@ -2,29 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { callLLM } from "@/lib/ai/client";
 import { prisma } from "@/lib/db/client";
-import { fetchEmbedding } from "@/lib/ai/embed";
-import { getNeo4jSession } from "@/lib/neo4j/client";
-import * as neo4j from "neo4j-driver";
+import { queryGraphPatterns } from "@/lib/graph/postgres";
 
 type Mode = "auto" | "sql" | "graph";
-
-const READ_ONLY_BLOCKLIST = /(create|merge|delete|set|remove|call\s+dbms|drop|load\s+csv|apoc\.load)/i;
-
-const GRAPH_SCHEMA = `
-Nodes/relationships:
-- (:Experiment {experimentId, testName, dateLaunched, dateConcluded, winningVar, monthlyExtrap, targetMetric, changeType, elementChanged, primarySignificance1, crChangeV1, rpvChangeV1, hypothesis, lessonLearned})
-- (:Vertical {name}) with (e)-[:IN_VERTICAL]->(vertical)
-- (:Geo {code}) with (e)-[:IN_GEO]->(geo)
-- (:Brand {name}) with (e)-[:FOR_BRAND]->(brand)
-- (:TargetMetric {name}) with (e)-[:TARGETS]->(targetMetric)
-- (:ChangeType {name}) with (e)-[:HAS_CHANGE_TYPE]->(changeType)
-- (:ElementChanged {name}) with (e)-[:CHANGED_ELEMENT]->(elementChanged)
-Guidance:
-- If vertical mentioned, filter via IN_VERTICAL; brand only if brand is explicitly referenced; geo via IN_GEO when requested.
-- If no date window is given, default to last 12 months (dateConcluded or dateLaunched).
-- When asking what “worked”, prefer winningVar IS NOT NULL.
-- Avoid returning “Other/Unknown” buckets when possible; order by count and apply LIMIT 200.
-`;
 
 function isSelectOnly(sql: string) {
   const trimmed = sql.trim().toLowerCase();
@@ -144,172 +124,88 @@ function sanitizeSql(sql: string) {
   return s;
 }
 
-// Force owner/person filters to use launchedBy (with a concluded date) instead of arbitrary LIKEs.
+// Simplified: only add launchedBy filter if clearly a person query and not already present.
+// The LLM prompt already handles most cases - this is just a safety net.
 function enforceLaunchedBy(question: string, sql: string) {
-  // Only match "by <name>" or "from <name>" patterns, not arbitrary LIKE clauses
-  const nameMatch = question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i);
-  // Don't extract names from SQL LIKE clauses - they could be verticals/geos
-  const rawName = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
-  const name = rawName ? rawName.replace(/["']/g, "") : null;
-  // Block common non-person terms including verticals, geos, and technical terms
+  // If SQL already has launchedBy filter, don't modify
+  if (/\blaunchedBy\b/i.test(sql)) return sql;
+  
+  // Only trigger for clear person patterns like "by John", "from Sarah"
+  const nameMatch = question.match(/\b(?:by|from)\s+([A-Z][a-z]+)(?:\s|$|,|\?)/);
+  if (!nameMatch) return sql;
+  
+  const name = nameMatch[1];
+  
+  // Block non-person terms
   const blockedNames = new Set([
-    "monthly",
-    "extrapolation",
-    "top",
-    "latest",
-    "date",
-    "dateconcluded",
-    "datelaunched",
-    "concluded",
-    "launched",
-    "experiment",
-    "experiments",
-    "overlay",
-    "overlayloader",
-    "loader",
+    "monthly", "extrapolation", "top", "latest", "date", "concluded", "launched",
+    "experiment", "experiments", "overlay", "loader", "the", "a", "an",
     // Verticals
-    "solar",
-    "panels",
-    "heat",
-    "pumps",
-    "hearing",
-    "aids",
-    "merchant",
-    "accounts",
-    "boilers",
-    "windows",
-    "insulation",
-    "ev",
-    "chargers",
-    // Geos
-    "uk",
-    "us",
-    "dk",
-    "de",
-    "au",
-    "nz",
-    "ca",
-    "ie",
-    "pl",
-    "es",
-    "fr",
-    "it",
-    "nl",
-    "se",
-    "no",
-    "fi",
-    "at",
-    "ch",
-    "be",
-    "denmark",
-    "germany",
-    "australia",
-    "canada",
-    "ireland",
-    "poland",
-    "spain",
-    "france",
-    "italy",
-    "netherlands",
-    "sweden",
-    "norway",
-    "finland",
-    "austria",
-    "switzerland",
-    "belgium",
-    // Common test terms
-    "cta",
-    "button",
-    "form",
-    "page",
-    "test",
-    "tests",
-    "vertical",
-    "geo"
+    "solar", "panels", "heat", "pumps", "hearing", "aids", "merchant", "accounts",
+    "boilers", "windows", "insulation", "chargers",
+    // Geos - capitalized versions
+    "uk", "us", "dk", "de", "au", "nz", "ca", "denmark", "germany", "australia",
+    // Regions
+    "americas", "emea", "apac", "row", "global",
+    // Test terms
+    "cta", "button", "form", "page", "test", "tests", "vertical", "geo"
   ]);
-  if (!name) return sql;
-  const lower = name.toLowerCase();
-  if (blockedNames.has(lower) || lower.includes("date") || lower.includes("time")) return sql;
-  if (!name) return sql;
-  const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
-  const concludeCondition = `"dateConcluded" IS NOT NULL`;
-  const trimmed = sql.replace(/;+\s*$/, "").trim();
-
-  // Strip trailing LIMIT then ORDER BY to preserve them.
-  let working = trimmed;
-  let limitClause = "";
-  const limitMatch = working.match(/\blimit\s+\d+\s*$/i);
-  if (limitMatch && typeof limitMatch.index === "number") {
-    limitClause = limitMatch[0].trim();
-    working = working.slice(0, limitMatch.index).trim();
-  }
-
-  let orderClause = "";
-  const orderMatch = working.match(/\border\s+by[\s\S]*$/i);
-  if (orderMatch && typeof orderMatch.index === "number") {
-    orderClause = orderMatch[0].trim();
-    working = working.slice(0, orderMatch.index).trim();
-  }
-
-  // Remove any existing WHERE and rebuild filters.
-  const whereIdx = working.search(/\bwhere\b/i);
-  const head = whereIdx >= 0 ? working.slice(0, whereIdx).trim() : working;
-
-  let rebuilt = `${head} WHERE ${condition} AND ${concludeCondition}`;
-  if (orderClause) rebuilt += ` ${orderClause}`;
-  if (limitClause) rebuilt += ` ${limitClause}`;
-  return rebuilt;
-}
-
-function sanitizeCypher(query: string) {
-  let cleaned = query.trim().replace(/```/g, "").replace(/^cypher\s*/i, "").trim();
-  cleaned = cleaned.replace(/\bstddevp\b/gi, "stdevp").replace(/\bstddev\b/gi, "stdev");
-
-  if (!cleaned.toLowerCase().startsWith("match") && !cleaned.toLowerCase().startsWith("with")) {
-    throw new Error("Only read-only MATCH/WITH queries are allowed");
-  }
-  if (READ_ONLY_BLOCKLIST.test(cleaned)) {
-    throw new Error("Write/unsafe clauses are not allowed in graph endpoint");
-  }
-  return cleaned;
-}
-
-function serializeNeo4jValue(value: unknown): unknown {
-  if (neo4j.isInt(value)) {
-    return (value as neo4j.Integer).toNumber();
-  }
-  if (Array.isArray(value)) return value.map(serializeNeo4jValue);
-  if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = serializeNeo4jValue(v);
-    }
-    return out;
-  }
-  return value;
+  
+  if (blockedNames.has(name.toLowerCase())) return sql;
+  
+  // Don't modify - the LLM should handle this.
+  // Only log for debugging if we would have modified.
+  console.log(`[enforceLaunchedBy] Detected person name "${name}" but not modifying SQL - LLM should handle`);
+  return sql;
 }
 
 function classifyMode(question: string): "sql" | "graph" {
   const q = question.toLowerCase();
-  const graphKeys = [
-    "relationship",
-    "co-occur",
-    "cooccur",
-    "co occurrence",
-    "network",
-    "graph",
-    "pattern across",
-    "change type",
-    "element changed",
-    "connections",
-    "clusters",
-    "fail",
-    "failed",
-    "failing",
-    "losing",
-    "flat"
+  
+  // Graph is best for: relationship/pattern analysis across change types and elements
+  // SQL is best for: listings, counts, specific filters, learnings, winners/losers
+  
+  // Graph patterns - relationship/pattern queries that benefit from aggregated graph view
+  const graphPatterns = [
+    /relationship[s]?\s+(?:exist\s+)?between/i,
+    /connection[s]?\s+(?:exist\s+)?between/i,
+    /co-?occur/i,
+    /co-?occurrence/i,
+    /pattern[s]?\s+across/i,
+    /clusters?\s+of/i,
+    /how\s+are\s+.*\s+connected/i,
+    /what\s+connects/i,
+    /connected\s+to\s+.*\s+outcomes?/i
   ];
-  return graphKeys.some((k) => q.includes(k)) ? "graph" : "sql";
+  
+  // Check graph patterns first - these are strong signals
+  for (const pattern of graphPatterns) {
+    if (pattern.test(q)) {
+      console.log(`[classifyMode] Graph pattern matched: ${pattern}`);
+      return "graph";
+    }
+  }
+  
+  // These should go to SQL (better handled there)
+  const sqlOverrides = [
+    "list",
+    "what did we learn",
+    "what worked",
+    "what hasn't",
+    "biggest win",
+    "largest win",
+    "top winner",
+    "failed experiment",
+    "summary of",
+    "how many"
+  ];
+  
+  // If any SQL override matches, use SQL
+  if (sqlOverrides.some((k) => q.includes(k))) {
+    return "sql";
+  }
+  
+  return "sql";
 }
 
 async function runSql(question: string) {
@@ -317,19 +213,53 @@ async function runSql(question: string) {
     {
       role: "system" as const,
       content: `You are a SQL assistant. Return JSON only, like {"sql": "...", "notes": "..."} on a single line (no line breaks inside values).
-Rules:
-- Use only the Experiment table described. In SQL, reference it as "Experiment" (double-quoted).
+
+CRITICAL RULES:
+- ALWAYS start with SELECT. NEVER use WITH clauses or CTEs. Only pure SELECT statements.
+- Use only the Experiment table described. Reference it as "Experiment" (double-quoted).
 - Always select the uuid id and experimentId so the UI can link to detail pages.
 - SELECT-only. No writes/DDL.
 - Default to the last 12 months if no date range given.
 - Always include a LIMIT <= 500.
 - Prefer dateConcluded; if missing, fall back to dateLaunched.
 - Use ISO dates (YYYY-MM-DD).
-- When filtering by month, use >= start AND < next month.
-- For time windows, consider dateConcluded OR dateLaunched as appropriate.
-- IMPORTANT: For vertical and geo filters, ALWAYS use case-insensitive ILIKE with wildcards: e.g., "vertical" ILIKE '%Hearing%' AND "geo" ILIKE '%DK%'. Never use exact equality (=) for these fields.
-- Common verticals: Solar Panels, Heat Pumps, Hearing Aids, Merchant Accounts, etc. Common geos: UK, US, DK, DE, AU, etc.
-Schema columns include experimentId, testName, vertical, geo, targetMetric, changeType, elementChanged, winningVar, monthlyExtrap, metrics, hypothesis, lessonLearned, dates, etc.
+
+VERTICAL FILTERING:
+- ALWAYS use short wildcards for verticals: '%Solar%', '%Hearing%', '%Merchant%', '%Heat%'
+- Do NOT use full names like '%Solar Panels%' or '%Hearing Aids%' - use the short form
+- Example: vertical ILIKE '%Solar%' (not '%Solar Panels%')
+
+GEO FILTERING:
+- Use ILIKE with wildcards: geo ILIKE '%UK%', geo ILIKE '%DK%'
+
+FAILED EXPERIMENTS - SIMPLE RULE:
+- For "failed", "flat", or "didn't work" experiments: ONLY use (winningVar IS NULL OR winningVar = '')
+- Do NOT add primarySignificance1 > 0.05 or negative CR/RPV conditions
+- Keep it simple: failed = no winner
+
+B2C/B2B FILTERING:
+- B2C and B2B appear in testName field, NOT separate columns
+- For B2C: "testName" ILIKE '%B2C%'
+- For B2B: "testName" ILIKE '%B2B%'
+
+REGIONAL FILTERING (Americas, RoW, etc.):
+- ALWAYS check BOTH testName AND tradingHub for regions
+- For Americas: ("testName" ILIKE '%AME%' OR "testName" ILIKE '%Americas%' OR "tradingHub" ILIKE '%Americas%')
+- For RoW: ("testName" ILIKE '%RoW%' OR "tradingHub" ILIKE '%RoW%')
+
+WINNERS:
+- For "largest win", "best performing": ORDER BY "monthlyExtrap" DESC and filter "winningVar" IS NOT NULL
+
+PERSON QUERIES:
+- For "by <name>", "from <name>": filter on "launchedBy" ILIKE '%name%'
+
+LEARNINGS QUERIES:
+- When asked "what did we learn", include: "lessonLearned", "hypothesis", "winningVar", "changeType", "elementChanged"
+
+PATTERN ANALYSIS:
+- When asked about "patterns" or "characteristics", include: "changeType", "elementChanged", "vertical", "geo"
+
+Schema columns include experimentId, testName, vertical, geo, targetMetric, changeType, elementChanged, winningVar, monthlyExtrap, hypothesis, lessonLearned, crChangeV1, crChangeV2, crChangeV3, rpvChangeV1, rpvChangeV2, rpvChangeV3, primarySignificance1, tradingHub, promoted, dates, etc.
 `
     },
     { role: "user" as const, content: `Question: ${question}\nReturn JSON with fields sql and notes.` }
@@ -355,120 +285,74 @@ Schema columns include experimentId, testName, vertical, geo, targetMetric, chan
 }
 
 async function runGraph(question: string) {
-  const wantsFailed =
-    question.toLowerCase().includes("fail") ||
-    question.toLowerCase().includes("failed") ||
-    question.toLowerCase().includes("failing");
-
-  const fallbackCypher = wantsFailed
-    ? `
-MATCH (e:Experiment)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)-[:CHANGED_ELEMENT]->(el:ElementChanged)
-WHERE (e.winningVar IS NULL OR e.winningVar = "")
-  AND (
-    (e.dateConcluded IS NOT NULL AND datetime(e.dateConcluded) >= datetime() - duration({months:12}))
-    OR (e.dateLaunched IS NOT NULL AND datetime(e.dateLaunched) >= datetime() - duration({months:12}))
-    OR (e.dateConcluded IS NULL AND e.dateLaunched IS NULL)
-  )
-WITH ct.name AS changeType, el.name AS elementChanged, count(e) AS experimentCount
-WHERE NOT (changeType = "other" AND elementChanged = "other")
-RETURN changeType, elementChanged, experimentCount
-ORDER BY experimentCount DESC
-LIMIT 200
-`
-    : `
-MATCH (e:Experiment)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)-[:CHANGED_ELEMENT]->(el:ElementChanged)
-WHERE (
-  (e.dateConcluded IS NOT NULL AND datetime(e.dateConcluded) >= datetime() - duration({months:12}))
-  OR (e.dateLaunched IS NOT NULL AND datetime(e.dateLaunched) >= datetime() - duration({months:12}))
-  OR (e.dateConcluded IS NULL AND e.dateLaunched IS NULL)
-)
-WITH ct.name AS changeType, el.name AS elementChanged, count(e) AS experimentCount
-WHERE NOT (changeType = "other" AND elementChanged = "other")
-RETURN changeType, elementChanged, experimentCount
-ORDER BY experimentCount DESC
-LIMIT 200
-`;
-
-  const cypherPrompt = [
-    {
-      role: "system" as const,
-      content: `
-You convert questions into Cypher queries for the described Neo4j schema.
-Return ONLY the Cypher code. Do not add prose. Use LIMIT 200 by default.
-${GRAPH_SCHEMA}
-            `.trim()
-    },
-    { role: "user" as const, content: `Question: ${question}\nCypher:` }
-  ];
-
-  let cypherText: string | null = null;
-  let records: any[] = [];
-
-  try {
-    const llmResponse = await callLLM({ messages: cypherPrompt });
-    cypherText = sanitizeCypher(llmResponse);
-    const session = await getNeo4jSession();
-    const result = await session.run(cypherText);
-    records = result.records.map((r) => serializeNeo4jValue(r.toObject()));
-    await session.close();
-  } catch (err) {
-    // Try a safe fallback query (failed-focused if relevant)
-    cypherText = fallbackCypher.trim();
-    const session = await getNeo4jSession();
-    const result = await session.run(cypherText);
-    records = result.records.map((r) => serializeNeo4jValue(r.toObject()));
-    await session.close();
+  // Extract context from question for filtering
+  const q = question.toLowerCase();
+  const wantsFailed = q.includes("fail") || q.includes("failed") || q.includes("failing");
+  const wantsWinners = q.includes("winner") || q.includes("winning") || q.includes("won") || q.includes("worked");
+  
+  // Try to extract vertical
+  let vertical: string | undefined;
+  const verticalPatterns = [/solar/i, /hearing/i, /merchant/i, /heat pump/i, /boiler/i, /window/i, /insulation/i, /charger/i];
+  for (const p of verticalPatterns) {
+    if (p.test(question)) {
+      vertical = question.match(p)?.[0];
+      break;
+    }
   }
 
-  let filtered = records.filter((r) => {
-    if (!r || typeof r !== "object") return false;
-    const obj = r as Record<string, unknown>;
-    const ct = (obj.changeType ?? "").toString().toLowerCase();
-    const el = (obj.elementChanged ?? "").toString().toLowerCase();
-    const isUnknownCt = !ct || ct.includes("unknown");
-    const isUnknownEl = !el || el.includes("unknown");
-    const isOtherCt = ct === "other";
-    const isOtherEl = el === "other";
-    return !((isUnknownCt || isOtherCt) && (isUnknownEl || isOtherEl));
+  // Try to extract geo
+  let geo: string | undefined;
+  const geoPatterns = [/\bUK\b/, /\bUS\b/, /\bDK\b/, /\bDE\b/, /\bAU\b/, /\bNZ\b/, /\bCA\b/];
+  for (const p of geoPatterns) {
+    if (p.test(question)) {
+      geo = question.match(p)?.[0];
+      break;
+    }
+  }
+
+  const rows = await queryGraphPatterns({
+    vertical,
+    geo,
+    onlyFailed: wantsFailed,
+    onlyWinners: wantsWinners,
+    monthsBack: 12,
+    limit: 200
   });
 
-  // If we still have no rows and this is a "failed" question, try the fallback query explicitly.
-  if (!filtered.length && wantsFailed) {
-    cypherText = fallbackCypher.trim();
-    const session = await getNeo4jSession();
-    const result = await session.run(cypherText);
-    const recs = result.records.map((r) => serializeNeo4jValue(r.toObject()));
-    await session.close();
-    filtered = recs;
+  // If no results with date filter, try without
+  if (!rows.length) {
+    const broadRows = await queryGraphPatterns({
+      vertical,
+      geo,
+      onlyFailed: wantsFailed,
+      onlyWinners: wantsWinners,
+      monthsBack: 120, // 10 years = effectively no date filter
+      limit: 200
+    });
+    return {
+      sql: "(graph pattern query from Postgres)",
+      rows: broadRows,
+      rowCount: broadRows.length,
+    };
   }
 
-  // If still empty, run a very broad pairs query (no date filter) to guarantee some edge data.
-  if (!filtered.length) {
-    const broadCypher = `
-MATCH (e:Experiment)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)-[:CHANGED_ELEMENT]->(el:ElementChanged)
-WITH ct.name AS changeType, el.name AS elementChanged, count(e) AS experimentCount
-WHERE NOT (changeType = "other" AND elementChanged = "other")
-RETURN changeType, elementChanged, experimentCount
-ORDER BY experimentCount DESC
-LIMIT 200
-`.trim();
-    cypherText = broadCypher;
-    const session = await getNeo4jSession();
-    const result = await session.run(broadCypher);
-    const recs = result.records.map((r) => serializeNeo4jValue(r.toObject()));
-    await session.close();
-    filtered = recs;
-  }
-
-  return { cypher: cypherText ?? "", rows: filtered.length ? filtered : records, rowCount: records.length };
+  return {
+    sql: "(graph pattern query from Postgres)",
+    rows,
+    rowCount: rows.length,
+  };
 }
 
 async function summarize(question: string, modeUsed: "sql" | "graph", detail: any) {
-  // Give the model a small, rich slice of data.
-  const rows = (detail.rows ?? []).slice(0, 30);
-  const learningsRaw = (detail.rows ?? []).filter((r: any) => r && typeof r === "object" && r.lessonLearned);
+  // Give the model a rich slice of data for comprehensive analysis.
+  const allRows = detail.rows ?? [];
+  const rows = allRows.slice(0, 50); // More rows for better analysis
+  const totalRowCount = allRows.length;
+  
+  // Extract experiments with learnings
+  const learningsRaw = allRows.filter((r: any) => r && typeof r === "object" && r.lessonLearned);
   const learnings = learningsRaw
-    .slice(0, 12)
+    .slice(0, 20) // More learnings for richer insights
     .map((r: any) => ({
       testName: r.testName,
       changeType: r.changeType,
@@ -477,29 +361,105 @@ async function summarize(question: string, modeUsed: "sql" | "graph", detail: an
       hypothesis: r.hypothesis,
       winningVar: r.winningVar,
       crChangeV1: r.crChangeV1,
-      rpvChangeV1: r.rpvChangeV1
+      rpvChangeV1: r.rpvChangeV1,
+      monthlyExtrap: r.monthlyExtrap,
+      vertical: r.vertical,
+      geo: r.geo
     }));
-  const source = modeUsed === "sql" ? `SQL: ${detail.sql}` : `Cypher: ${detail.cypher}`;
+  
+  // Extract top winners for highlights
+  const winners = allRows
+    .filter((r: any) => r && r.winningVar && r.monthlyExtrap)
+    .sort((a: any, b: any) => (b.monthlyExtrap || 0) - (a.monthlyExtrap || 0))
+    .slice(0, 5)
+    .map((r: any) => ({
+      testName: r.testName,
+      monthlyExtrap: r.monthlyExtrap,
+      winningVar: r.winningVar,
+      crChangeV1: r.crChangeV1,
+      vertical: r.vertical
+    }));
+  
+  // Calculate basic stats
+  const stats = {
+    totalExperiments: totalRowCount,
+    withLearnings: learningsRaw.length,
+    withWinners: allRows.filter((r: any) => r && r.winningVar).length,
+    uniqueVerticals: [...new Set(allRows.map((r: any) => r?.vertical).filter(Boolean))].length,
+    uniqueGeos: [...new Set(allRows.map((r: any) => r?.geo).filter(Boolean))].length
+  };
+  
+  const source = modeUsed === "sql" ? `SQL: ${detail.sql}` : `Graph pattern query (Postgres)`;
   const prompt = [
     {
       role: "system" as const,
-      content: `You are an analytics assistant. Produce a concise, learning-focused answer from the provided data.
-Use changeType/elementChanged, hypothesis, and lessonLearned to extract what we tested and what we learned.
-If lessonLearned is present, use it in "Learnings" with what worked/what didn't. If missing, infer from testName/hypothesis cautiously.
-Favor rows with lessonLearned for the Learnings section. Include testName, changeType/elementChanged when useful.
-Include 2-4 concrete learnings citing testName and a short snippet from lessonLearned/hypothesis, plus metric deltas if available (crChangeV1/rpvChangeV1/winningVar).
-Include: Answer, Highlights (bullets), Data window/filters, Learnings (bullets with what worked/what didn’t), Graph patterns (bullets, if graph data), Next steps (1-3 bullets). Be specific; avoid generic statements.`
+      content: `You are a senior CRO analyst. Generate a comprehensive, detailed analysis from the provided experiment data.
+
+OUTPUT FORMAT (use markdown headers and formatting):
+
+## Executive Summary
+A 2-3 sentence overview answering the user's question directly.
+
+## Key Highlights
+• 4-6 bullet points with specific numbers, percentages, and experiment names
+• Include top performers with their metrics (e.g., "+15% CR", "£50K monthly impact")
+• Mention patterns you observe in the data
+
+## Data Coverage
+• Total experiments analyzed: X
+• Time window: [infer from data or mention if not specified]
+• Verticals covered: X unique
+• Geographic regions: X unique
+
+## Detailed Learnings
+For each major insight, provide:
+### [Learning Category/Theme]
+**What we tested:** Brief description of the experiment approach
+**What worked:** Specific results with metrics
+**What didn't work:** Any negative findings (if applicable)
+**Key quote:** Direct quote from lessonLearned field (if available)
+**Example experiments:** List 1-2 specific test names
+
+Include 3-5 detailed learning sections based on the data.
+
+## Patterns & Trends
+• Cross-cutting patterns you observe (e.g., "CTA changes consistently outperform form changes")
+• Vertical-specific insights (e.g., "Solar Panels responds well to trust signals")
+• Geographic patterns (if applicable)
+
+## Recommended Next Steps
+1. Specific, actionable recommendation based on the data
+2. Another specific recommendation
+3. Questions to explore further
+
+Be specific and data-driven. Quote actual test names, metrics, and lessons. Avoid generic statements.
+If the data is limited, acknowledge it but still provide whatever insights you can.`
     },
     {
       role: "user" as const,
       content: `Question: ${question}
-Mode: ${modeUsed}
+
+Query Mode: ${modeUsed}
 ${source}
-Rows (truncated): ${JSON.stringify(rows)}
-Selected learnings (if any): ${JSON.stringify(learnings)}`
+
+Data Summary:
+- Total rows: ${totalRowCount}
+- Experiments with learnings: ${stats.withLearnings}
+- Experiments with winners: ${stats.withWinners}
+- Unique verticals: ${stats.uniqueVerticals}
+- Unique geos: ${stats.uniqueGeos}
+
+Top Winners:
+${JSON.stringify(winners, null, 2)}
+
+Sample Rows (${rows.length} of ${totalRowCount}):
+${JSON.stringify(rows, null, 2)}
+
+Experiments with Learnings (${learnings.length}):
+${JSON.stringify(learnings, null, 2)}`
     }
   ];
-  const answer = await callLLM({ messages: prompt });
+  const answer = await callLLM({ messages: prompt, maxTokens: 2000 });
   return answer.trim();
 }
 
@@ -526,41 +486,63 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Hard override: in auto or sql mode we always run SQL only; never fall back to graph.
-    const chosen: "sql" | "graph" = mode === "graph" ? "graph" : "sql";
+    // Smart routing: auto-detect best mode, or respect explicit choice
+    let chosen: "sql" | "graph";
+    if (mode === "auto") {
+      chosen = classifyMode(question);
+      console.log(`[AI Ask] Auto-classified "${question.slice(0, 50)}..." as ${chosen}`);
+    } else {
+      chosen = mode === "graph" ? "graph" : "sql";
+    }
+    
     let primaryResult: any;
     let modeUsed: "sql" | "graph" = chosen;
+    let fallbackUsed = false;
 
-    if (chosen === "sql") {
-      primaryResult = await runSql(question);
-    } else {
-      // graph requested
+    if (chosen === "graph") {
+      // Try graph first (now uses Postgres)
       try {
         primaryResult = await runGraph(question);
         modeUsed = "graph";
+        
+        // If graph returns no meaningful results, fallback to SQL (unless explicitly requested)
+        if ((!primaryResult.rows?.length || primaryResult.rows.length < 3) && mode === "auto") {
+          console.log(`[AI Ask] Graph returned few results (${primaryResult.rows?.length || 0}), falling back to SQL`);
+          primaryResult = await runSql(question);
+          modeUsed = "sql";
+          fallbackUsed = true;
+        }
       } catch (e) {
-        // Do not fallback to SQL if user explicitly chose graph; surface the graph error.
-        const msg = e instanceof Error ? e.message : String(e);
-        return NextResponse.json({ error: msg }, { status: 400 });
+        if (mode === "auto") {
+          // Auto mode: fallback to SQL on graph error
+          console.log(`[AI Ask] Graph failed, falling back to SQL:`, e instanceof Error ? e.message : e);
+          primaryResult = await runSql(question);
+          modeUsed = "sql";
+          fallbackUsed = true;
+        } else {
+          // Explicit graph mode: surface the error
+          const msg = e instanceof Error ? e.message : String(e);
+          return NextResponse.json({ error: msg }, { status: 400 });
+        }
       }
-      if (!primaryResult.rows?.length) {
-        // Keep graph mode; do not fallback to SQL in graph-only mode.
-        modeUsed = "graph";
-      }
+    } else {
+      // SQL mode
+      primaryResult = await runSql(question);
+      modeUsed = "sql";
     }
 
     const answer = await summarize(question, modeUsed, primaryResult);
 
     return NextResponse.json({
       modeRequested: mode,
+      modeClassified: chosen,
       modeUsed,
       answer,
       rows: primaryResult.rows ?? [],
       rowCount: primaryResult.rowCount ?? (primaryResult.rows ? primaryResult.rows.length : 0),
       sql: primaryResult.sql,
-      cypher: primaryResult.cypher,
       notes: primaryResult.notes,
-      fallbackTried: false
+      fallbackUsed
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

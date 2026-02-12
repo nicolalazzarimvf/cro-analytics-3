@@ -176,67 +176,39 @@ function sanitizeSql(sql: string) {
   return s;
 }
 
-// If the question includes "by/from <name>", enforce a launchedBy filter in the SQL.
-// Only triggers for actual person names, not verticals/geos/test terms.
+// Simplified: only add launchedBy filter if clearly a person query and not already present.
+// The LLM prompt already handles most cases - this is just a safety net.
 function enforceLaunchedBy(question: string, sql: string) {
-  // Only match "by <name>" or "from <name>" patterns in the question, not SQL LIKE clauses
-  const nameMatch = question.match(/\b(?:by|from)\s+([a-zA-Z][\w\s'-]*)/i);
-  const name = nameMatch ? nameMatch[1].trim().split(/\s+/)[0] : null;
-  if (!name) return sql;
+  // If SQL already has launchedBy filter, don't modify
+  if (/\blaunchedBy\b/i.test(sql)) return sql;
   
-  // Block common non-person terms including verticals, geos, and technical terms
+  // Only trigger for clear person patterns like "by John", "from Sarah"
+  const nameMatch = question.match(/\b(?:by|from)\s+([A-Z][a-z]+)(?:\s|$|,|\?)/);
+  if (!nameMatch) return sql;
+  
+  const name = nameMatch[1];
+  
+  // Block non-person terms
   const blockedNames = new Set([
-    "monthly", "extrapolation", "top", "latest", "date", "dateconcluded", "datelaunched",
-    "concluded", "launched", "experiment", "experiments", "overlay", "overlayloader", "loader",
+    "monthly", "extrapolation", "top", "latest", "date", "concluded", "launched",
+    "experiment", "experiments", "overlay", "loader", "the", "a", "an",
     // Verticals
     "solar", "panels", "heat", "pumps", "hearing", "aids", "merchant", "accounts",
-    "boilers", "windows", "insulation", "ev", "chargers",
-    // Geos
-    "uk", "us", "dk", "de", "au", "nz", "ca", "ie", "pl", "es", "fr", "it", "nl",
-    "se", "no", "fi", "at", "ch", "be", "denmark", "germany", "australia", "canada",
-    "ireland", "poland", "spain", "france", "italy", "netherlands", "sweden", "norway",
-    "finland", "austria", "switzerland", "belgium",
-    // Common test terms
+    "boilers", "windows", "insulation", "chargers",
+    // Geos - capitalized versions
+    "uk", "us", "dk", "de", "au", "nz", "ca", "denmark", "germany", "australia",
+    // Regions
+    "americas", "emea", "apac", "row", "global",
+    // Test terms
     "cta", "button", "form", "page", "test", "tests", "vertical", "geo"
   ]);
   
-  const lower = name.toLowerCase();
-  if (blockedNames.has(lower) || lower.includes("date") || lower.includes("time")) return sql;
+  if (blockedNames.has(name.toLowerCase())) return sql;
   
-  const condition = `("launchedBy" ILIKE '%${name}%' OR "testName" ILIKE '%${name}%')`;
-  const concludeCondition = `"dateConcluded" IS NOT NULL`;
-  const trimmed = sql.replace(/;+\s*$/, "").trim();
-
-  // Strip any existing ownerName/owner fields
-  let base = trimmed.replace(/\bownerName\b/gi, `"launchedBy"`).replace(/\bowner\b/gi, `"launchedBy"`);
-
-  // If there's already a launchedBy filter, leave as-is.
-  if (/\b"launchedBy"\b/i.test(base)) return base;
-
-  // Pull out LIMIT if present
-  let limitClause = "";
-  let before = base;
-  const limitMatch = base.match(/\blimit\s+\d+/i);
-  if (limitMatch && typeof limitMatch.index === "number") {
-    limitClause = limitMatch[0];
-    before = base.slice(0, limitMatch.index).trim();
-    const afterLimit = base.slice(limitMatch.index + limitClause.length).trim();
-    if (afterLimit) limitClause = `${limitClause} ${afterLimit}`;
-  }
-
-  // Clean up dangling WHERE/AND after removals
-  before = before.replace(/\bWHERE\s*AND\s*/gi, "WHERE ");
-  before = before.replace(/\bWHERE\s*$/gi, "").trim();
-  before = before.replace(/\bAND\s*$/gi, "").trim();
-
-  const hasWhere = /\bwhere\b/i.test(before);
-  let withFilter = hasWhere ? `${before} AND ${condition}` : `${before} WHERE ${condition}`;
-  // Always require concluded date for person queries.
-  if (!/\bdateConcluded\b/i.test(withFilter)) {
-    const hasWhereNow = /\bwhere\b/i.test(withFilter);
-    withFilter = hasWhereNow ? `${withFilter} AND ${concludeCondition}` : `${withFilter} WHERE ${concludeCondition}`;
-  }
-  return `${withFilter}${limitClause ? " " + limitClause : ""}`;
+  // Don't modify - the LLM should handle this.
+  // Only log for debugging if we would have modified.
+  console.log(`[enforceLaunchedBy] Detected person name "${name}" but not modifying SQL - LLM should handle`);
+  return sql;
 }
 
 function buildSqlPrompt(question: string) {
@@ -244,20 +216,52 @@ function buildSqlPrompt(question: string) {
     {
       role: "system" as const,
       content: `You are a SQL assistant. Return JSON only, like {"sql": "...", "notes": "..."} on a single line (no line breaks inside values).
-Rules:
-- Use only the Experiment table described. In SQL, reference it as "Experiment" (double-quoted).
+
+CRITICAL RULES:
+- ALWAYS start with SELECT. NEVER use WITH clauses or CTEs. Only pure SELECT statements.
+- Use only the Experiment table described. Reference it as "Experiment" (double-quoted).
 - SELECT-only. No writes/DDL.
 - Default to the last 12 months if no date range given.
 - Always include a LIMIT <= 500.
 - Prefer dateConcluded; if missing, fall back to dateLaunched.
-- If the question is about a person/owner (e.g., "by <name>", "from <name>"), filter on launchedBy using ILIKE '%name%'.
 - Use ISO dates (YYYY-MM-DD).
 - When using relative ranges, use Postgres interval syntax: e.g., CURRENT_DATE - INTERVAL '6 months'.
-- When filtering by month, use an inclusive lower bound and exclusive upper bound: e.g., >= '2025-10-01' AND < '2025-11-01'.
-- For time-windowed questions, consider both dateConcluded and dateLaunched where appropriate (e.g., concluded within window OR launched within window). For geo/vertical, treat geo separately from vertical (do not concatenate).
-- For "failed experiments", include cases where winningVar is null/empty or the primarySignificance1 is above a typical threshold (e.g., > 0.05) or CR/RPV deltas are negative; make the WHERE reflect that.
-- IMPORTANT: For vertical and geo filters, ALWAYS use case-insensitive ILIKE with wildcards: e.g., "vertical" ILIKE '%Hearing%' AND "geo" ILIKE '%DK%'. Never use exact equality (=) for these fields.
-- Common verticals: Solar Panels, Heat Pumps, Hearing Aids, Merchant Accounts, etc. Common geos: UK, US, DK, DE, AU, etc.
+
+VERTICAL FILTERING:
+- ALWAYS use short wildcards for verticals: '%Solar%', '%Hearing%', '%Merchant%', '%Heat%'
+- Do NOT use full names like '%Solar Panels%' or '%Hearing Aids%' - use the short form
+- Example: vertical ILIKE '%Solar%' (not '%Solar Panels%')
+
+GEO FILTERING:
+- Use ILIKE with wildcards: geo ILIKE '%UK%', geo ILIKE '%DK%'
+
+FAILED EXPERIMENTS - SIMPLE RULE:
+- For "failed", "flat", or "didn't work" experiments: ONLY use (winningVar IS NULL OR winningVar = '')
+- Do NOT add primarySignificance1 > 0.05 or negative CR/RPV conditions
+- Keep it simple: failed = no winner
+
+B2C/B2B FILTERING:
+- B2C and B2B appear in testName field, NOT separate columns
+- For B2C: "testName" ILIKE '%B2C%'
+- For B2B: "testName" ILIKE '%B2B%'
+
+REGIONAL FILTERING (Americas, RoW, etc.):
+- ALWAYS check BOTH testName AND tradingHub for regions
+- For Americas: ("testName" ILIKE '%AME%' OR "testName" ILIKE '%Americas%' OR "tradingHub" ILIKE '%Americas%')
+- For RoW: ("testName" ILIKE '%RoW%' OR "tradingHub" ILIKE '%RoW%')
+
+WINNERS:
+- For "largest win", "best performing": ORDER BY "monthlyExtrap" DESC and filter "winningVar" IS NOT NULL
+
+PERSON QUERIES:
+- For "by <name>", "from <name>": filter on "launchedBy" ILIKE '%name%'
+
+LEARNINGS QUERIES:
+- When asked "what did we learn", include: "lessonLearned", "hypothesis", "winningVar", "changeType", "elementChanged"
+
+PATTERN ANALYSIS:
+- When asked about "patterns" or "characteristics", include: "changeType", "elementChanged", "vertical", "geo"
+
 Schema:
 ${SCHEMA_DESCRIPTION}`
     },

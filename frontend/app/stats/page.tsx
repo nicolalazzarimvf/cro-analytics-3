@@ -1,9 +1,8 @@
 import Link from "next/link";
-import neo4j from "neo4j-driver";
 import { prisma } from "@/lib/db/client";
-import { getNeo4jSession } from "@/lib/neo4j/client";
+import { buildExperimentGraph, type GraphData } from "@/lib/graph/postgres";
 import AskAI from "@/app/components/AskAI";
-import Neo4jGraphCard, { type Neo4jGraphData } from "./Neo4jGraphCard";
+import GraphCard from "./GraphCard";
 
 function startOfUtcMonth(year: number, monthIndex0: number) {
   return new Date(Date.UTC(year, monthIndex0, 1, 0, 0, 0, 0));
@@ -301,8 +300,6 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
   const hasMonthlyExtrap = totalMonthlyExtrap > 0;
   const topWinnerByExtrap = winnerExtrap[0] ?? null;
   const topWinnerExperiment = topWinnerByExtrap ? topExperimentMap.get(topWinnerByExtrap.winner) : null;
-  const normalizeExpId = (v: string | null | undefined) => (v ?? "").trim();
-
   const experiments = await prisma.experiment.findMany({
     where: dateFilter,
     select: {
@@ -325,278 +322,24 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
   const totalPages = Math.max(1, Math.ceil(totalInMode / pageSize));
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
-  const fallbackPreviewMap = new Map<
-    string,
-    { id: string; experimentId: string; testName: string | null; screenshotThumbnailUrl: string | null; screenshotWebUrl: string | null }
-  >(
-    experiments.map(
-      (e: {
-        id: string;
-        experimentId: string;
-        testName: string | null;
-        screenshotThumbnailUrl: string | null;
-        screenshotWebUrl: string | null;
-      }) => [
-        normalizeExpId(e.experimentId),
-        {
-          id: e.id,
-          experimentId: e.experimentId,
-          testName: e.testName ?? null,
-          screenshotThumbnailUrl: e.screenshotThumbnailUrl,
-          screenshotWebUrl: e.screenshotWebUrl
-        }
-      ]
-    )
-  );
 
-  let neo4jGraphData: Neo4jGraphData | null = null;
-  let neo4jGraphError: string | null = null;
+  let graphData: GraphData | null = null;
+  let graphError: string | null = null;
   if (topWinnerExperiment?.experimentId) {
     try {
-      const session = await getNeo4jSession();
-      try {
-        const query = `
-          MATCH (e:Experiment {experimentId: $experimentId})
-          OPTIONAL MATCH (e)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)
-          OPTIONAL MATCH (e)-[:CHANGED_ELEMENT]->(el:ElementChanged)
-          OPTIONAL MATCH (e)-[:IN_VERTICAL]->(v:Vertical)
-          OPTIONAL MATCH (e)-[:IN_GEO]->(g:Geo)
-          OPTIONAL MATCH (e)-[:FOR_BRAND]->(b:Brand)
-          OPTIONAL MATCH (e)-[:TARGETS]->(tm:TargetMetric)
-          WITH e, collect(DISTINCT ct) AS changeTypes, collect(DISTINCT el) AS elements,
-                 collect(DISTINCT v) AS verticals, collect(DISTINCT g) AS geos,
-                 collect(DISTINCT b) AS brands, collect(DISTINCT tm) AS metrics
-          OPTIONAL MATCH (e)-[:SIMILAR_TO]->(other:Experiment)
-          WITH e, changeTypes, elements, verticals, geos, brands, metrics,
-               other
-          ORDER BY coalesce(other.monthlyExtrap, 0) DESC
-          WITH e, changeTypes, elements, verticals, geos, brands, metrics,
-               collect(DISTINCT other)[0..6] AS closest
-          RETURN e, changeTypes, elements, verticals, geos, brands, metrics, closest
-        `;
-        const result = await session.run(query, { experimentId: topWinnerExperiment.experimentId });
-        if (result.records.length) {
-          const record = result.records[0];
-          const eNode = record.get("e") as any;
-          const changeTypes = (record.get("changeTypes") as any[]) ?? [];
-          const elements = (record.get("elements") as any[]) ?? [];
-          const verticals = (record.get("verticals") as any[]) ?? [];
-          const geos = (record.get("geos") as any[]) ?? [];
-          const brands = (record.get("brands") as any[]) ?? [];
-          const metrics = (record.get("metrics") as any[]) ?? [];
-          let closest = (record.get("closest") as any[]) ?? [];
-          if (!closest.length) {
-            const fallbackClosest = await session.run(
-              `
-              MATCH (e:Experiment {experimentId: $experimentId})
-              OPTIONAL MATCH (e)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)<-[:HAS_CHANGE_TYPE]-(other:Experiment)
-              WHERE other <> e
-              WITH e, collect(DISTINCT other) AS pool
-              RETURN pool[0..6] AS closest
-              `,
-              { experimentId: topWinnerExperiment.experimentId }
-            );
-            if (fallbackClosest.records.length) {
-              closest = (fallbackClosest.records[0].get("closest") as any[]) ?? [];
-            }
-          }
-
-          // If we still have fewer than 6, top up with other experiments sharing change types.
-          if (closest.length < 6) {
-            const excludeIds = closest
-              .map((n) => normalizeExpId(n?.properties?.experimentId as string | undefined))
-              .filter(Boolean);
-            excludeIds.push(normalizeExpId(topWinnerExperiment.experimentId));
-            const toTake = Math.max(0, Math.floor(6 - closest.length));
-            const moreSimilar = await session.run(
-              `
-              MATCH (e:Experiment {experimentId: $experimentId})
-              OPTIONAL MATCH (e)-[:HAS_CHANGE_TYPE]->(ct:ChangeType)<-[:HAS_CHANGE_TYPE]-(other:Experiment)
-              OPTIONAL MATCH (e)-[:CHANGED_ELEMENT]->(el:ElementChanged)<-[:CHANGED_ELEMENT]-(other)
-              OPTIONAL MATCH (e)-[:IN_VERTICAL]->(v:Vertical)<-[:IN_VERTICAL]-(other)
-              OPTIONAL MATCH (e)-[:IN_GEO]->(g:Geo)<-[:IN_GEO]-(other)
-              OPTIONAL MATCH (e)-[:FOR_BRAND]->(b:Brand)<-[:FOR_BRAND]-(other)
-              OPTIONAL MATCH (e)-[:TARGETS]->(tm:TargetMetric)<-[:TARGETS]-(other)
-              WITH e, other,
-                   (count(DISTINCT ct) + count(DISTINCT el) + count(DISTINCT v) + count(DISTINCT g) + count(DISTINCT b) + count(DISTINCT tm)) AS score
-              WHERE other <> e
-                AND other.experimentId IS NOT NULL
-                AND score > 0
-                AND NOT other.experimentId IN $exclude
-              WITH DISTINCT other, score
-              ORDER BY score DESC, coalesce(other.monthlyExtrap, 0) DESC
-              LIMIT $limit
-              RETURN collect(other) AS extra
-              `,
-              {
-                experimentId: topWinnerExperiment.experimentId,
-                exclude: excludeIds,
-                limit: neo4j.int(toTake)
-              }
-            );
-            if (moreSimilar.records.length) {
-              const extra = (moreSimilar.records[0].get("extra") as any[]) ?? [];
-              const merged = [...closest, ...extra];
-              const seen = new Set<string>();
-              closest = merged.filter((n) => {
-                const id = normalizeExpId(n?.properties?.experimentId as string | undefined);
-                if (!id || seen.has(id)) return false;
-                seen.add(id);
-                return true;
-              });
-            }
-          }
-
-          const closestExperimentIds = closest
-            .map((n) => normalizeExpId(n?.properties?.experimentId as string | undefined))
-            .filter(Boolean);
-          const candidateExperimentIds = Array.from(
-            new Set(
-              [normalizeExpId(topWinnerExperiment.experimentId), ...closestExperimentIds].filter(
-                Boolean
-              )
-            )
-          );
-          const experimentPreviewRows = candidateExperimentIds.length
-            ? await prisma.experiment.findMany({
-                where: { experimentId: { in: candidateExperimentIds } },
-                select: {
-                  id: true,
-                  experimentId: true,
-                  testName: true,
-                  screenshotThumbnailUrl: true,
-                  screenshotWebUrl: true
-                }
-              })
-            : [];
-          const experimentPreviewMap = new Map<
-            string,
-            { id: string; experimentId: string; testName: string | null; screenshotThumbnailUrl: string | null; screenshotWebUrl: string | null }
-          >(
-            experimentPreviewRows.map((r: { id: string; experimentId: string; testName: string | null; screenshotThumbnailUrl: string | null; screenshotWebUrl: string | null }) => [
-              normalizeExpId(r.experimentId),
-              {
-                id: r.id,
-                experimentId: r.experimentId,
-                testName: r.testName ?? null,
-                screenshotThumbnailUrl: r.screenshotThumbnailUrl,
-                screenshotWebUrl: r.screenshotWebUrl
-              }
-            ])
-          );
-          // merge fallback previews from current page if not already set
-          fallbackPreviewMap.forEach(
-            (
-              value: {
-                id: string;
-                experimentId: string;
-                testName: string | null;
-                screenshotThumbnailUrl: string | null;
-                screenshotWebUrl: string | null;
-              },
-              key: string
-            ) => {
-            if (!experimentPreviewMap.has(key)) {
-              experimentPreviewMap.set(key, value);
-            }
-            }
-          );
-
-          const nodesMap = new Map<
-            string,
-            {
-              id: string;
-              label: string;
-              type: string;
-              count: number;
-              primary?: boolean;
-              href?: string;
-              previewUrl?: string;
-              title?: string;
-            }
-          >();
-          const links: Neo4jGraphData["links"] = [];
-          const allowedNodeLabels = new Set([
-            "ChangeType",
-            "ElementChanged",
-            "Vertical",
-            "Geo",
-            "Brand",
-            "TargetMetric",
-            "Experiment"
-          ]);
-
-          const expId = normalizeExpId(eNode?.properties?.experimentId ?? topWinnerExperiment.experimentId);
-          nodesMap.set(expId, {
-            id: expId,
-            label: `${expId}`,
-            type: "experiment",
-            count: 3,
-            primary: true,
-            href:
-              experimentPreviewMap.get(expId)?.id != null
-                ? `/experiments/${experimentPreviewMap.get(expId)!.id}?from=stats`
-                : undefined,
-            title: experimentPreviewMap.get(expId)?.testName ?? undefined
-          });
-
-          const pushNode = (node: any, type: string) => {
-            const labels: string[] = Array.isArray(node?.labels) ? node.labels : [];
-            if (labels.length && !labels.some((lbl) => allowedNodeLabels.has(lbl))) return;
-            const props = (node?.properties ?? {}) as Record<string, unknown>;
-            const rawName =
-              (props.name as string | undefined)?.trim() ||
-              (props.code as string | undefined)?.trim() ||
-              (props.id as string | undefined)?.trim() ||
-              `${type} unknown`;
-            const normalizedType = type.toLowerCase();
-            if (!nodesMap.has(rawName)) {
-              nodesMap.set(rawName, { id: rawName, label: rawName, type: normalizedType, count: 1 });
-            }
-            links.push({ source: expId, target: rawName, value: 2 });
-          };
-
-          changeTypes.forEach((n) => pushNode(n, "change"));
-          elements.forEach((n) => pushNode(n, "element"));
-          verticals.forEach((n) => pushNode(n, "vertical"));
-          geos.forEach((n) => pushNode(n, "geo"));
-          brands.forEach((n) => pushNode(n, "brand"));
-          metrics.forEach((n) => pushNode(n, "metric"));
-          closest.forEach((n) => {
-            const otherId = normalizeExpId(n?.properties?.experimentId as string | undefined);
-            if (!otherId) return;
-            const meta = experimentPreviewMap.get(otherId);
-            if (!nodesMap.has(otherId)) {
-              nodesMap.set(otherId, {
-                id: otherId,
-                label: `${otherId}`,
-                type: "experiment",
-                count: 2,
-                href: meta ? `/experiments/${meta.id}?from=stats` : undefined,
-                title: meta?.testName ?? undefined
-              });
-            }
-            links.push({ source: expId, target: otherId, value: 3 });
-          });
-
-          if (links.length) {
-            const nodes = Array.from(nodesMap.values()).filter((n) => {
-              const label = n.label.toLowerCase();
-              return n.type !== "tag" && !label.includes("tag");
-            });
-            const allowed = new Set(nodes.map((n) => n.id));
-            const filteredLinks = links.filter((l) => allowed.has(l.source as string) && allowed.has(l.target as string));
-            neo4jGraphData = { nodes, links: filteredLinks };
-          }
-        }
-      } finally {
-        await session.close();
+      const result = await buildExperimentGraph(
+        topWinnerExperiment.experimentId,
+        "stats",
+        6
+      );
+      if (result.nodes.length && result.links.length) {
+        graphData = result;
       }
     } catch (err) {
-      neo4jGraphError = err instanceof Error ? err.message : "Unable to load Neo4j data";
+      graphError = err instanceof Error ? err.message : "Unable to load graph data";
     }
   } else {
-    neo4jGraphError = "No top winner in this window.";
+    graphError = "No top winner in this window.";
   }
 
   return (
@@ -886,10 +629,10 @@ const totalMonthlyExtrap = winnerExtrap.reduce(
       </div>
 
       <div className="mt-8">
-        <Neo4jGraphCard
-          data={neo4jGraphData}
-          error={neo4jGraphError}
-          title="Top winner spotlight (Neo4j)"
+        <GraphCard
+          data={graphData}
+          error={graphError}
+          title="Top winner spotlight"
           subtitle={
             topWinnerExperiment
               ? `Graph neighborhood for ${topWinnerExperiment.experimentId}`

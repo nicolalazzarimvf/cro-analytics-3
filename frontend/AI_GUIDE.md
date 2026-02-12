@@ -44,7 +44,7 @@ This outlines how we convert natural-language questions into Postgres-backed ans
 
 ## Future enhancements
 - Add embeddings/RAG on text fields (testName, hypothesis, lessons) for fuzzy matching.
-- Optional Neo4j pathing only if we need graph-style insights; otherwise stick to SQL for simplicity.
+- Graph pattern analysis is done entirely in Postgres via SQL aggregation — no external graph DB needed.
 - Add cached “canonical queries” for common questions. 
 
 ---
@@ -52,9 +52,9 @@ This outlines how we convert natural-language questions into Postgres-backed ans
 ## Progress log (latest work)
 - Added unified ask endpoint `/api/ai/ask`: classifies intent (SQL vs Graph), runs the chosen path, falls back to the other if no data, then summarizes with the LLM into a single answer. Enforces SELECT-only SQL, read-only Cypher, interval/round/date_sub normalization, and graph stddev -> stdev normalization.
 - Frontend Ask panel now calls `/api/ai/ask`, shows one combined answer, and collapses source details; graph responses include bar + mini graph visualization (changeType → elementChanged).
-- Graph sync: Neo4j stores Experiment nodes with Vertical/Geo/Brand/TargetMetric/ChangeType/ElementChanged relationships and key props (monthlyExtrap, metrics, hypothesis, lessonLearned, etc.). Sync via `npm run neo4j:sync -- 0`.
+- Graph data: experiment relationships (changeType, elementChanged, vertical, geo, brand, targetMetric) and similarity are computed on-the-fly from Postgres — no separate sync step needed.
 - Embeddings: all experiments embedded into Postgres pgvector; import auto-upserts CSV rows and can embed missing rows (scripts: `ai:embed`, `ai:embed:all`).
-- Guardrails: middleware allows `/api/ai/ask`, `/api/ai/query`, `/api/ai/graph`; read-only SQL/Cypher enforced; stddev normalization in graph endpoint to avoid Neo4j function errors.
+- Guardrails: middleware allows `/api/ai/ask`, `/api/ai/query`, `/api/ai/graph`; read-only SQL enforced; all queries run against Postgres.
 - Ports: dev server sometimes binds to 3002 if 3000 is blocked; prefer the port printed by `npm run dev` unless 3000 is free.
 
 ### Current usage tips

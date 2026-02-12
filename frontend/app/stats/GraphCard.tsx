@@ -1,13 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as ThreeLib from "three";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
-export type Neo4jGraphData = {
+export type GraphData = {
   nodes: Array<{
     id: string;
     label: string;
@@ -23,14 +22,14 @@ export type Neo4jGraphData = {
 
 type GraphContext = "stats" | "experiment";
 
-export default function Neo4jGraphCard({
+export default function GraphCard({
   data,
   error,
-  title = "Neo4j 3D view",
+  title = "Experiment graph",
   subtitle,
   context = "stats"
 }: {
-  data: Neo4jGraphData | null;
+  data: GraphData | null;
   error?: string | null;
   title?: string;
   subtitle?: string;
@@ -91,13 +90,13 @@ export default function Neo4jGraphCard({
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1">
           <span className="block h-3 w-3 rounded-full bg-gray-500" aria-hidden />
-          <span>{context === "experiment" ? "Similar experiments" : "Similar experiments"}</span>
+          <span>Similar experiments</span>
         </div>
       </div>
 
       {!hasData ? (
         <div className="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-600">
-          {error ? `Could not load Neo4j graph: ${error}` : "No graph data available."}
+          {error ? `Could not load graph: ${error}` : "No graph data available."}
         </div>
       ) : (
         <div className="relative mt-4 h-[440px] w-full overflow-hidden rounded-xl border border-gray-100 bg-white">
@@ -194,26 +193,22 @@ export default function Neo4jGraphCard({
         <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-700">
           <div className="font-semibold text-gray-900">
             {context === "experiment"
-              ? "How to read this (example view of how this experiment connects in Neo4j)"
-              : "How to read this (example view of how experiments connect in Neo4j)"}
+              ? "How to read this graph"
+              : "How to read this graph"}
           </div>
           {context === "experiment" ? (
             <ul className="mt-1 space-y-1">
               <li>Cube = this experiment; blue = change type; green = element; purple = vertical/geo/brand/metric; gray = similar experiments.</li>
-              <li>Why similar experiments: first from <code>SIMILAR_TO</code>; if missing, we pick up to 6 experiments sharing change types with this experiment.</li>
-              <li>How it’s fetched: we pull this experiment’s Neo4j neighborhood (change type, element, vertical, geo, brand, metric) and attach similar experiments.</li>
+              <li>Similar experiments are found by shared attributes (change type, element, vertical, geo, brand, metric), ranked by overlap count.</li>
               <li>Interact: hover for ID/title; click experiment nodes to open their detail pages.</li>
               <li>What to infer: clusters around the same blue/green nodes suggest repeatable changes; gray nodes near a vertical/geo hint where the pattern generalizes.</li>
-              <li className="font-semibold text-gray-900">If you don’t see gray nodes: this experiment may have no SIMILAR_TO or matching change-type links in Neo4j yet.</li>
             </ul>
           ) : (
           <ul className="mt-1 space-y-1">
             <li>Cube = top winner; blue = change type; green = element; purple = vertical/geo/brand/metric; gray = similar experiments.</li>
-            <li>Why similar experiments: first from <code>SIMILAR_TO</code>; if missing, we pick up to 6 experiments sharing change types with the winner.</li>
-            <li>How it’s fetched: we pull the winner’s Neo4j neighborhood (change type, element, vertical, geo, brand, metric) and attach similar experiments.</li>
+            <li>Similar experiments are found by shared attributes (change type, element, vertical, geo, brand, metric), ranked by overlap and monthly impact.</li>
             <li>Interact: hover for ID/title; click experiment nodes to open their detail pages.</li>
             <li>What to infer: clusters around the same blue/green nodes suggest repeatable winning changes; gray nodes near a vertical/geo hint where the pattern generalizes.</li>
-            <li className="font-semibold text-gray-900">If you don’t see gray nodes: this winner may have no SIMILAR_TO or matching change-type links in Neo4j yet.</li>
           </ul>
           )}
         </div>

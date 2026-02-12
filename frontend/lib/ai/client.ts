@@ -13,7 +13,7 @@ const ANTHROPIC_FALLBACK_MODEL = "claude-3-5-haiku-20241022";
 
 const DEFAULT_MAX_TOKENS = Number(process.env.AI_MAX_TOKENS ?? "2000");
 
-async function callAnthropic(model: string, messages: ChatMessage[]): Promise<string> {
+async function callAnthropic(model: string, messages: ChatMessage[], maxTokens?: number): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY missing");
 
@@ -30,7 +30,7 @@ async function callAnthropic(model: string, messages: ChatMessage[]): Promise<st
     body: JSON.stringify({
       model,
       system,
-      max_tokens: DEFAULT_MAX_TOKENS,
+      max_tokens: maxTokens ?? DEFAULT_MAX_TOKENS,
       messages: userMessages
     })
   });
@@ -45,7 +45,7 @@ async function callAnthropic(model: string, messages: ChatMessage[]): Promise<st
   return text.trim();
 }
 
-async function callOpenAI(model: string, messages: ChatMessage[]): Promise<string> {
+async function callOpenAI(model: string, messages: ChatMessage[], maxTokens?: number): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY missing");
 
@@ -58,7 +58,7 @@ async function callOpenAI(model: string, messages: ChatMessage[]): Promise<strin
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: DEFAULT_MAX_TOKENS,
+      max_tokens: maxTokens ?? DEFAULT_MAX_TOKENS,
       temperature: 0.2
     })
   });
@@ -77,21 +77,23 @@ export async function callLLM(options: {
   messages: ChatMessage[];
   provider?: Provider;
   model?: string;
+  maxTokens?: number;
 }) {
   const provider = options.provider ?? DEFAULT_PROVIDER;
   const model = options.model ?? DEFAULT_MODEL;
+  const maxTokens = options.maxTokens;
 
   if (provider === "anthropic") {
     try {
-      return await callAnthropic(model, options.messages);
+      return await callAnthropic(model, options.messages, maxTokens);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "";
       if (model !== ANTHROPIC_FALLBACK_MODEL && /model/i.test(message) && /not[-\s]?found/i.test(message)) {
         // Retry with fallback model
-        return await callAnthropic(ANTHROPIC_FALLBACK_MODEL, options.messages);
+        return await callAnthropic(ANTHROPIC_FALLBACK_MODEL, options.messages, maxTokens);
       }
       throw err;
     }
   }
-  return callOpenAI(model, options.messages);
+  return callOpenAI(model, options.messages, maxTokens);
 }
