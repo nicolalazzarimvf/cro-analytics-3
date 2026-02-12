@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown, { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useTheme } from "@/app/context/ThemeContext";
+import DashboardCards from "./DashboardCards";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
@@ -211,12 +212,22 @@ const mdComponents: Components = {
 
 /* ── Main component ── */
 
+type KpiCard = {
+  title: string;
+  subtitle: string;
+  value: string;
+  change: number;
+  sparkline: number[];
+};
+
 type AskAIProps = {
   defaultRows?: Record<string, any>[];
   defaultLabel?: string;
+  kpiCards?: KpiCard[];
+  kpiLabels?: string[];
 };
 
-export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
+export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }: AskAIProps = {}) {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -482,6 +493,13 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
         <div className="mt-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-3 text-sm text-blue-800 dark:text-blue-200">
           Showing <span className="font-semibold">{defaultLabel}</span> recap ({defaultRows.length} experiments).
           Ask a question above to explore specific data.
+        </div>
+      ) : null}
+
+      {/* ── KPI cards ── */}
+      {kpiCards && kpiCards.length > 0 ? (
+        <div className="mt-6">
+          <DashboardCards cards={kpiCards} labels={kpiLabels ?? []} />
         </div>
       ) : null}
 

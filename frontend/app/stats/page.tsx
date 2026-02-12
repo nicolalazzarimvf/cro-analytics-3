@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db/client";
 import AskAI from "@/app/components/AskAI";
-import DashboardCards from "@/app/components/DashboardCards";
+
 
 function startOfUtcMonth(year: number, monthIndex0: number) {
   return new Date(Date.UTC(year, monthIndex0, 1, 0, 0, 0, 0));
@@ -21,9 +21,9 @@ export default async function StatsPage() {
   const startThisMonth = startOfUtcMonth(now.getUTCFullYear(), now.getUTCMonth());
   const monthLabel = formatMonthLabel(startPrevMonth);
 
-  // Build monthly buckets for the last 6 months (for KPI cards)
+  // Build monthly buckets for the last 12 months (for KPI cards)
   const months: { start: Date; end: Date; label: string }[] = [];
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 11; i >= 0; i--) {
     const y = now.getUTCFullYear();
     const m = now.getUTCMonth() - i;
     const start = startOfUtcMonth(y, m);
@@ -129,13 +129,12 @@ export default async function StatsPage() {
         </p>
       </div>
 
-      {/* KPI cards */}
-      <DashboardCards cards={cards} labels={sparkLabels} />
-
-      <div className="mt-8">
+      <div className="mt-4">
         <AskAI
           defaultRows={serializedRows}
           defaultLabel={monthLabel}
+          kpiCards={cards}
+          kpiLabels={sparkLabels}
         />
       </div>
     </main>
