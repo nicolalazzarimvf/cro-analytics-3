@@ -526,13 +526,13 @@ export default function AskAI() {
                 </div>
                 <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 bg-white">
                   <ForceGraph3D
+                    key={`graph-${Array.from(expandedAttrs).sort().join(",")}`}
                     graphData={{ nodes: graphData.nodes, links: graphData.links }}
                     width={800}
                     height={400}
                     backgroundColor="#ffffff"
                     nodeColor={(node: any) => {
                       if (node.type === "experiment") return "#f97316";
-                      // Highlight expanded attribute nodes
                       const isExpanded = expandedAttrs.has(node.id);
                       if (node.type === "change") return isExpanded ? "#1d4ed8" : "#3b82f6";
                       if (node.type === "element") return isExpanded ? "#059669" : "#10b981";
@@ -556,11 +556,9 @@ export default function AskAI() {
                     cooldownTicks={100}
                     onNodeClick={(node: any) => {
                       if (node.type === "experiment") {
-                        // Open experiment detail
                         if (node.uuid) setModalId(node.uuid);
                         return;
                       }
-                      // Toggle expand/collapse for attribute nodes
                       if (node.type === "change" || node.type === "element") {
                         setExpandedAttrs((prev) => {
                           const next = new Set(prev);
