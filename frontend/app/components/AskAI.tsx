@@ -870,7 +870,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
 
       {/* ── Experiment detail modal ── */}
       {modalId ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
           <div className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-xl">
             <button
               type="button"

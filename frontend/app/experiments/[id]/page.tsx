@@ -93,7 +93,16 @@ export default async function ExperimentDetail({
           }
         `}</style>
       ) : null}
-      {!isBare ? (
+      {isBare ? (
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            {experiment.testName || experiment.experimentId || "Experiment"}
+          </h1>
+          {experiment.testName && experiment.experimentId ? (
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{experiment.experimentId}</p>
+          ) : null}
+        </div>
+      ) : (
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Experiment</p>
@@ -107,7 +116,7 @@ export default async function ExperimentDetail({
                   href={experiment.optimizelyLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="font-medium text-brand-700 hover:underline"
+                  className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   View in Optimizely
                 </a>
@@ -121,7 +130,7 @@ export default async function ExperimentDetail({
             ← Back
           </Link>
         </div>
-      ) : null}
+      )}
 
       <div className="mt-6 grid gap-4">
         <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">

@@ -58,18 +58,18 @@ export function ScreenshotList({
     return (
       <div className="grid gap-4 sm:grid-cols-2">
         {data.map((file) => (
-          <div key={file.id} className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+          <div key={file.id} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-gray-900">{file.name || "Untitled"}</div>
-                <div className="text-xs text-gray-500">{file.mimeType}</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">{file.name || "Untitled"}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{file.mimeType}</div>
               </div>
               {file.webViewLink ? (
                 <a
                   href={file.webViewLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-medium text-brand-700 hover:underline"
+                  className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   Open
                 </a>
@@ -101,7 +101,7 @@ export function ScreenshotList({
             href={fallback.webUrl}
             target="_blank"
             rel="noreferrer"
-            className="text-brand-700 hover:underline"
+            className="text-blue-600 dark:text-blue-400 hover:underline"
           >
             Open stored link
           </a>
@@ -120,7 +120,7 @@ export function ScreenshotList({
           href={fallback.webUrl}
           target="_blank"
           rel="noreferrer"
-          className="text-brand-700 hover:underline"
+          className="text-blue-600 dark:text-blue-400 hover:underline"
         >
           Open stored link
         </a>

@@ -165,7 +165,7 @@ export default async function ExperimentsPage({
               {items.length ? (
                 items.map((row: ExperimentRow) => (
                   <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-4 py-3 font-semibold text-brand-700">
+                    <td className="px-4 py-3 font-semibold text-blue-600 dark:text-blue-400">
                       <Link href={`/experiments/${row.id}?from=experiments`} className="hover:underline">
                         {row.experimentId || "—"}
                       </Link>
@@ -183,7 +183,7 @@ export default async function ExperimentsPage({
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(row.dateLaunched)}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(row.dateConcluded)}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                      <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
                         {row.winningVar?.trim() || "N.D."}
                       </span>
                     </td>
