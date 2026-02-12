@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 type Card = {
   title: string;
   subtitle: string;
@@ -9,6 +11,7 @@ type Card = {
 };
 
 function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const gradId = useId();
   const max = Math.max(...data, 1);
   const min = Math.min(...data, 0);
   const range = max - min || 1;
@@ -35,14 +38,14 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
       preserveAspectRatio="none"
     >
       <defs>
-        <linearGradient id={`grad-${color}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={color} stopOpacity={0.25} />
           <stop offset="100%" stopColor={color} stopOpacity={0} />
         </linearGradient>
       </defs>
       <polygon
         points={fillPoints}
-        fill={`url(#grad-${color})`}
+        fill={`url(#${gradId})`}
       />
       <polyline
         points={points.join(" ")}
@@ -64,7 +67,7 @@ export default function DashboardCards({
   cards: Card[];
   labels: string[];
 }) {
-  const colors = ["#8b5cf6", "#8b5cf6", "#8b5cf6"];
+  const colors = ["#8b5cf6", "#10b981", "#3b82f6"];
 
   return (
     <div className="grid gap-4 sm:grid-cols-3">
