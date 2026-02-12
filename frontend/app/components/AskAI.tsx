@@ -13,6 +13,10 @@ type GraphExperiment = {
   changeType: string | null;
   elementChanged: string | null;
   winningVar: string | null;
+  vertical: string | null;
+  geo: string | null;
+  monthlyExtrap: number | null;
+  dateConcluded: string | null;
 };
 
 type AskResponse = {
@@ -167,15 +171,33 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
   const [tablePage, setTablePage] = useState(1);
   const [expandedAttrs, setExpandedAttrs] = useState<Set<string>>(new Set());
 
-  // Breakdowns: from query result, or from server-provided default rows
+  // Breakdowns: prefer SQL rows if they have individual experiment data,
+  // fall back to graphExperiments (always individual rows), then default rows.
   const breakdowns = useMemo(() => {
-    if (result?.rows?.length) return computeBreakdowns(result.rows);
+    if (result) {
+      // Check if SQL rows have individual experiment data (not aggregated)
+      const sqlRows = result.rows ?? [];
+      const hasExperimentData = sqlRows.length > 0 && sqlRows[0]?.vertical !== undefined;
+      if (hasExperimentData) return computeBreakdowns(sqlRows);
+      // Fallback: use graphExperiments which always have individual rows
+      if (result.graphExperiments?.length) return computeBreakdowns(result.graphExperiments);
+      // Last resort: use SQL rows anyway
+      if (sqlRows.length) return computeBreakdowns(sqlRows);
+    }
     if (defaultRows?.length) return computeBreakdowns(defaultRows);
     return null;
   }, [result, defaultRows]);
 
-  // Which rows to use for the experiments table (query result or default)
-  const activeRows = result?.rows?.length ? result.rows : defaultRows ?? [];
+  // Which rows to use for the experiments table — prefer SQL if individual, else graphExperiments
+  const activeRows = useMemo(() => {
+    if (result) {
+      const sqlRows = result.rows ?? [];
+      if (sqlRows.length > 0 && sqlRows[0]?.experimentId) return sqlRows;
+      if (result.graphExperiments?.length) return result.graphExperiments;
+      return sqlRows;
+    }
+    return defaultRows ?? [];
+  }, [result, defaultRows]);
   const activeLabel = result ? "Query results" : defaultLabel ?? "Previous month";
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -395,76 +417,56 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
       {result?.answer ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm ai-response">
           <style jsx global>{`
-            /* ── Reset ── */
             .ai-response {
               padding: 0;
               overflow: hidden;
+              font-size: 0.8125rem;
+              color: #334155;
+              line-height: 1.7;
             }
 
-            /* ── H2 section headers — full-width accent bars ── */
+            /* ── H2 — section dividers ── */
             .ai-response h2 {
               margin: 0;
-              padding: 0.625rem 1.25rem;
-              font-size: 0.6875rem;
+              padding: 0.5rem 1.25rem;
+              font-size: 0.625rem;
               font-weight: 800;
-              letter-spacing: 0.08em;
+              letter-spacing: 0.1em;
               text-transform: uppercase;
-              color: #465fff;
-              background: linear-gradient(to right, #f0f4ff, #f8fafc);
-              border-top: 1px solid #e5e7eb;
+              color: #94a3b8;
+              background: #f8fafc;
+              border-top: 1px solid #f1f5f9;
             }
             .ai-response h2:first-child {
               border-top: none;
               border-radius: 0.75rem 0.75rem 0 0;
             }
 
-            /* ── Content after H2 — padded sections ── */
+            /* ── Content padding ── */
             .ai-response h2 + * { margin-top: 0; }
-            .ai-response h2 ~ p,
-            .ai-response h2 ~ ul,
-            .ai-response h2 ~ ol,
-            .ai-response h2 ~ blockquote {
-              margin-left: 1.25rem;
-              margin-right: 1.25rem;
+            .ai-response p,
+            .ai-response ul,
+            .ai-response ol,
+            .ai-response blockquote {
+              padding-left: 1.25rem;
+              padding-right: 1.25rem;
             }
 
-            /* ── H3 sub-sections — card style ── */
+            /* ── H3 — learning cards ── */
             .ai-response h3 {
-              margin: 1rem 1.25rem 0;
+              margin: 0.625rem 1rem 0.375rem;
               padding: 0.5rem 0.75rem;
               font-size: 0.8125rem;
-              font-weight: 700;
+              font-weight: 600;
               color: #1e293b;
-              background: #f8fafc;
-              border: 1px solid #e2e8f0;
-              border-radius: 0.5rem 0.5rem 0 0;
-              border-bottom: 2px solid #465fff;
-            }
-
-            /* Content immediately after H3 — indented card body */
-            .ai-response h3 + p,
-            .ai-response h3 + ul,
-            .ai-response h3 + ol {
-              margin: 0 1.25rem 0.75rem;
-              padding: 0.75rem;
-              background: #fafbfc;
-              border: 1px solid #e2e8f0;
-              border-top: none;
-              border-radius: 0 0 0.5rem 0.5rem;
-            }
-            /* Subsequent siblings of h3 (2nd p, 2nd ul after h3) */
-            .ai-response h3 ~ p,
-            .ai-response h3 ~ ul,
-            .ai-response h3 ~ ol {
-              margin-left: 1.25rem;
-              margin-right: 1.25rem;
-              padding-left: 0.75rem;
-              padding-right: 0.75rem;
+              background: #f1f5f9;
+              border-radius: 0.375rem;
+              border-left: 3px solid #465fff;
             }
 
             /* ── H4 ── */
             .ai-response h4 {
-              margin: 0.5rem 1.25rem 0.25rem;
+              margin: 0.375rem 1.25rem 0.125rem;
               font-size: 0.8125rem;
               font-weight: 600;
               color: #334155;
@@ -472,74 +474,57 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
 
             /* ── Paragraphs ── */
             .ai-response p {
-              margin-bottom: 0.5rem;
-              font-size: 0.8125rem;
-              color: #374151;
-              line-height: 1.75;
+              margin-bottom: 0.375rem;
+              padding-top: 0.125rem;
             }
             .ai-response > p:first-of-type {
-              padding: 1rem 1.25rem 0;
+              padding-top: 0.875rem;
             }
 
-            /* ── Strong labels — "What we tested:", "What worked:" etc ── */
+            /* ── Strong — inline bold ── */
             .ai-response strong {
               font-weight: 700;
               color: #0f172a;
             }
             .ai-response p > strong:first-child {
-              display: block;
-              margin-top: 0.5rem;
-              margin-bottom: 0.25rem;
-              padding: 0.25rem 0;
+              color: #64748b;
               font-size: 0.6875rem;
-              font-weight: 800;
-              letter-spacing: 0.06em;
+              font-weight: 700;
               text-transform: uppercase;
-              color: #465fff;
-              border-bottom: 1px solid #e5e7eb;
+              letter-spacing: 0.04em;
             }
 
             /* ── Unordered lists ── */
             .ai-response ul {
-              margin-top: 0.25rem;
-              margin-bottom: 0.75rem;
-              padding-left: 0;
+              margin: 0.125rem 0 0.5rem;
               list-style: none;
             }
             .ai-response ul li {
               position: relative;
-              padding-left: 1.125rem;
-              font-size: 0.8125rem;
-              color: #374151;
-              line-height: 1.7;
-              margin-bottom: 0.25rem;
+              padding-left: 0.875rem;
+              margin-bottom: 0.125rem;
             }
             .ai-response ul li::before {
               content: "";
               position: absolute;
-              left: 0.125rem;
-              top: 0.55em;
-              width: 5px;
-              height: 5px;
+              left: 0;
+              top: 0.6em;
+              width: 4px;
+              height: 4px;
               border-radius: 50%;
-              background: #465fff;
+              background: #cbd5e1;
             }
 
             /* ── Ordered lists ── */
             .ai-response ol {
-              margin-top: 0.25rem;
-              margin-bottom: 0.75rem;
-              padding-left: 0;
+              margin: 0.125rem 0 0.5rem;
               list-style: none;
               counter-reset: ol-counter;
             }
             .ai-response ol li {
               position: relative;
-              padding-left: 2rem;
-              font-size: 0.8125rem;
-              color: #374151;
-              line-height: 1.7;
-              margin-bottom: 0.5rem;
+              padding-left: 1.75rem;
+              margin-bottom: 0.375rem;
               counter-increment: ol-counter;
             }
             .ai-response ol li::before {
@@ -547,61 +532,47 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
               position: absolute;
               left: 0;
               top: 0.1em;
-              width: 1.375rem;
-              height: 1.375rem;
+              width: 1.25rem;
+              height: 1.25rem;
               display: flex;
               align-items: center;
               justify-content: center;
-              font-size: 0.6875rem;
+              font-size: 0.625rem;
               font-weight: 800;
               color: white;
               background: #465fff;
               border-radius: 50%;
             }
 
-            /* ── Emphasis ── */
-            .ai-response em {
-              font-style: italic;
-              color: #64748b;
-            }
-
-            /* ── Inline code ── */
+            /* ── Misc ── */
+            .ai-response em { font-style: italic; color: #64748b; }
             .ai-response code {
               background: #f1f5f9;
-              padding: 0.125rem 0.375rem;
-              border-radius: 0.25rem;
+              padding: 0.0625rem 0.3125rem;
+              border-radius: 0.1875rem;
               font-size: 0.75rem;
               font-family: ui-monospace, monospace;
-              color: #465fff;
+              color: #475569;
             }
-
-            /* ── Blockquotes ── */
             .ai-response blockquote {
-              border-left: 3px solid #465fff;
-              background: #eff6ff;
-              padding: 0.75rem 1rem;
-              margin: 0.5rem 1.25rem;
-              border-radius: 0 0.5rem 0.5rem 0;
+              border-left: 3px solid #e2e8f0;
+              background: #f8fafc;
+              padding: 0.625rem 1rem;
+              margin: 0.375rem 1.25rem;
+              border-radius: 0 0.375rem 0.375rem 0;
             }
             .ai-response blockquote p {
-              margin: 0;
-              padding: 0;
-              font-size: 0.8125rem;
+              margin: 0; padding: 0;
               font-style: italic;
-              color: #1e40af;
-              line-height: 1.6;
+              color: #475569;
             }
-
-            /* ── Horizontal rules ── */
             .ai-response hr {
               margin: 0;
               border: none;
-              border-top: 1px solid #e5e7eb;
+              border-top: 1px solid #f1f5f9;
             }
-
-            /* ── Bottom padding ── */
             .ai-response > *:last-child {
-              padding-bottom: 1.25rem;
+              padding-bottom: 1rem;
             }
           `}</style>
           <ReactMarkdown>{result.answer}</ReactMarkdown>

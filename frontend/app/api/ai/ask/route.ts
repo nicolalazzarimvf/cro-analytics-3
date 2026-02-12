@@ -25,6 +25,10 @@ type GraphExperiment = {
   changeType: string | null;
   elementChanged: string | null;
   winningVar: string | null;
+  vertical: string | null;
+  geo: string | null;
+  monthlyExtrap: number | null;
+  dateConcluded: string | null;
 };
 
 function isSelectOnly(sql: string) {
@@ -400,7 +404,8 @@ async function runGraphExperiments(question: string): Promise<GraphExperiment[]>
   const dateWhere = [...where, `(("dateConcluded" >= NOW() - INTERVAL '24 months') OR ("dateLaunched" >= NOW() - INTERVAL '24 months') OR ("dateConcluded" IS NULL AND "dateLaunched" IS NULL))`];
 
   const sql = `
-    SELECT "id", "experimentId", "testName", "changeType", "elementChanged", "winningVar"
+    SELECT "id", "experimentId", "testName", "changeType", "elementChanged",
+           "winningVar", "vertical", "geo", "monthlyExtrap", "dateConcluded"
     FROM "Experiment"
     WHERE ${dateWhere.join(" AND ")}
     ORDER BY COALESCE("dateConcluded", "dateLaunched") DESC NULLS LAST
@@ -414,7 +419,8 @@ async function runGraphExperiments(question: string): Promise<GraphExperiment[]>
   if (result.length < 50) {
     console.log(`[AI Ask] Graph experiments: only ${result.length} with date filter, retrying without`);
     const broadSql = `
-      SELECT "id", "experimentId", "testName", "changeType", "elementChanged", "winningVar"
+      SELECT "id", "experimentId", "testName", "changeType", "elementChanged",
+             "winningVar", "vertical", "geo", "monthlyExtrap", "dateConcluded"
       FROM "Experiment"
       WHERE ${where.join(" AND ")}
       ORDER BY COALESCE("dateConcluded", "dateLaunched") DESC NULLS LAST
