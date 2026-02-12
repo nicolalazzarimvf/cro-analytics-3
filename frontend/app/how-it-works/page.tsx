@@ -77,7 +77,7 @@ export default function HowItWorksPage() {
             </li>
           </ol>
           <p>
-            All three data sources are combined and fed to a GPT model that produces a detailed, data-driven analysis — including executive summary, key highlights, detailed learnings, recommended next steps, and patterns.
+            All three data sources are combined and fed to a Claude model (Anthropic) that produces a detailed, data-driven analysis — including executive summary, key highlights, detailed learnings, recommended next steps, and patterns.
           </p>
           <p>
             The generated SQL is displayed so you can <strong>verify and reuse</strong> the query.
@@ -95,7 +95,7 @@ export default function HowItWorksPage() {
         </div>
         <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
           <p>
-            An <strong>automated OpenAI GPT evaluation suite</strong> runs every week against a curated set of benchmark questions.
+            An <strong>automated AI evaluation suite</strong> (powered by OpenAI GPT as an independent judge) runs every week against a curated set of benchmark questions.
             Each response is scored across multiple dimensions — factual accuracy, data coverage, actionability, and formatting.
           </p>
           <p>
@@ -127,7 +127,7 @@ export default function HowItWorksPage() {
         <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Technical details</h2>
         <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 dark:text-gray-300">
           <li>
-            <strong>Stack:</strong> Next.js (App Router) + Tailwind CSS + Prisma + Postgres + OpenAI GPT + react-force-graph-3d (Three.js).
+            <strong>Stack:</strong> Next.js (App Router) + Tailwind CSS + Prisma + Postgres + Anthropic Claude + react-force-graph-3d (Three.js).
           </li>
           <li>
             <strong>Imports:</strong> Daily Vercel cron → <code>/api/import/auto</code> (Google service account). Manual trigger from home page.
@@ -139,7 +139,7 @@ export default function HowItWorksPage() {
             <strong>Graph engine:</strong> All relationships computed from Postgres at query time. Similar experiments ranked by attribute overlap + monthly revenue impact.
           </li>
           <li>
-            <strong>AI evals:</strong> Weekly automated GPT eval suite benchmarks response quality across accuracy, coverage, and actionability. Results feed back into prompt and pipeline improvements.
+            <strong>AI evals:</strong> Weekly automated eval suite (OpenAI GPT as independent judge) benchmarks response quality across accuracy, coverage, and actionability. Results feed back into prompt and pipeline improvements.
           </li>
         </ul>
       </section>
