@@ -50,42 +50,30 @@ function ThinkingDots() {
   );
 }
 
-type GNode = { id: string; label: string; type: string; uuid?: string; title?: string };
+type GNode = { id: string; label: string; type: string };
 type GLink = { source: string; target: string };
 
 /**
- * Build graph data that starts with attribute nodes (changeType ↔ elementChanged)
- * and expands to show individual experiments when an attribute node is clicked.
- *
- * `graphExperiments` is a dedicated list of experiments with their attributes,
- * fetched independently from the LLM SQL query — so we always have data to expand.
+ * Build a static graph of changeType ↔ elementChanged patterns.
+ * No experiment nodes — those are shown in a panel below the graph.
  */
-function buildCombinedGraphData(
-  graphRows: Record<string, any>[],
-  graphExperiments: GraphExperiment[],
-  expandedAttrs: Set<string>,
-) {
+function buildGraphData(graphRows: Record<string, any>[]) {
   const nodesMap = new Map<string, GNode>();
   const links: GLink[] = [];
-
-  // Pattern counts for sizing attribute nodes
   const patternCounts = new Map<string, number>();
-  for (const r of graphRows) {
-    const ct = (r.changeType ?? "").toString().trim();
-    const el = (r.elementChanged ?? "").toString().trim();
-    const cnt = Number(r.experimentCount ?? r.count ?? 1);
-    if (ct) patternCounts.set(`ct:${ct}`, (patternCounts.get(`ct:${ct}`) ?? 0) + cnt);
-    if (el) patternCounts.set(`el:${el}`, (patternCounts.get(`el:${el}`) ?? 0) + cnt);
-  }
-
-  // 1. Build attribute nodes from graph patterns (always shown)
   const seenLinks = new Set<string>();
+
   for (const r of graphRows.slice(0, 30)) {
     const ct = (r.changeType ?? "").toString().trim();
     const el = (r.elementChanged ?? "").toString().trim();
+    const cnt = Number(r.experimentCount ?? r.count ?? 1);
     if (!ct || !el) continue;
+
     const ctKey = `ct:${ct}`;
     const elKey = `el:${el}`;
+    if (ct) patternCounts.set(ctKey, (patternCounts.get(ctKey) ?? 0) + cnt);
+    if (el) patternCounts.set(elKey, (patternCounts.get(elKey) ?? 0) + cnt);
+
     if (!nodesMap.has(ctKey)) nodesMap.set(ctKey, { id: ctKey, label: ct, type: "change" });
     if (!nodesMap.has(elKey)) nodesMap.set(elKey, { id: elKey, label: el, type: "element" });
     const linkKey = `${ctKey}->${elKey}`;
@@ -95,46 +83,23 @@ function buildCombinedGraphData(
     }
   }
 
-  // 2. For each expanded attribute, add matching experiments
-  if (expandedAttrs.size > 0 && graphExperiments.length > 0) {
-    for (const exp of graphExperiments) {
-      const expId = (exp.experimentId ?? "").trim();
-      if (!expId) continue;
-
-      const ct = (exp.changeType ?? "").trim();
-      const el = (exp.elementChanged ?? "").trim();
-      const ctKey = ct ? `ct:${ct}` : "";
-      const elKey = el ? `el:${el}` : "";
-
-      // Only add this experiment if one of its attributes is expanded
-      const matchesCt = ctKey && expandedAttrs.has(ctKey);
-      const matchesEl = elKey && expandedAttrs.has(elKey);
-      if (!matchesCt && !matchesEl) continue;
-
-      if (!nodesMap.has(expId)) {
-        nodesMap.set(expId, {
-          id: expId,
-          label: expId,
-          type: "experiment",
-          uuid: exp.id,
-          title: exp.testName ?? undefined,
-        });
-      }
-
-      if (ctKey && nodesMap.has(ctKey)) {
-        const lk = `${expId}->${ctKey}`;
-        if (!seenLinks.has(lk)) { seenLinks.add(lk); links.push({ source: expId, target: ctKey }); }
-      }
-      if (elKey && nodesMap.has(elKey)) {
-        const lk = `${expId}->${elKey}`;
-        if (!seenLinks.has(lk)) { seenLinks.add(lk); links.push({ source: expId, target: elKey }); }
-      }
-    }
-  }
-
   if (nodesMap.size < 2) return null;
-
   return { nodes: Array.from(nodesMap.values()), links, patternCounts };
+}
+
+/** Get experiments matching a selected attribute node */
+function getExperimentsForAttr(
+  attrId: string,
+  graphExperiments: GraphExperiment[],
+): GraphExperiment[] {
+  // attrId is like "ct:CTA" or "el:Button"
+  const [prefix, ...rest] = attrId.split(":");
+  const value = rest.join(":"); // handle values with colons
+  return graphExperiments.filter((exp) => {
+    if (prefix === "ct") return (exp.changeType ?? "").trim() === value;
+    if (prefix === "el") return (exp.elementChanged ?? "").trim() === value;
+    return false;
+  });
 }
 
 export default function AskAI() {
@@ -591,23 +556,31 @@ export default function AskAI() {
         </div>
       ) : null}
       {result ? (() => {
-        const graphData = buildCombinedGraphData(result.graphRows, result.graphExperiments, expandedAttrs);
-        const expCount = graphData?.nodes.filter((n) => n.type === "experiment").length ?? 0;
+        const graphData = buildGraphData(result.graphRows);
+        const selectedExps = expandedAttrs.size > 0
+          ? Array.from(expandedAttrs).flatMap((attr) => getExperimentsForAttr(attr, result.graphExperiments))
+          : [];
+        // deduplicate by experiment id
+        const seen = new Set<string>();
+        const uniqueExps = selectedExps.filter((e) => {
+          const k = e.id ?? e.experimentId;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+
         return (
           <>
-            {/* Combined graph — shown directly below the answer */}
+            {/* Graph pattern visualization */}
             {graphData ? (
               <div className="mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
                 <div>
                   <div className="text-sm font-semibold text-gray-900">Experiment graph</div>
                   <p className="text-xs text-gray-500">
-                    Click a <span className="font-semibold text-blue-600">change type</span> or <span className="font-semibold text-emerald-600">element</span> node to reveal related experiments. Click an experiment to view details.
+                    Click a <span className="font-semibold text-blue-600">change type</span> or <span className="font-semibold text-emerald-600">element</span> node to see related experiments below.
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-600">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
-                    <span className="block h-2.5 w-2.5 rounded-full bg-orange-500" /> Experiment
-                  </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-2 py-0.5">
                     <span className="block h-2.5 w-2.5 rounded-full bg-blue-500" /> Change type
                   </span>
@@ -620,32 +593,27 @@ export default function AskAI() {
                       onClick={() => setExpandedAttrs(new Set())}
                       className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-700 hover:bg-gray-200"
                     >
-                      Collapse all ({expCount} experiments shown)
+                      Clear selection
                     </button>
                   ) : null}
                 </div>
                 <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 bg-white">
                   <ForceGraph3D
-                    key={`graph-${Array.from(expandedAttrs).sort().join(",")}`}
                     graphData={{ nodes: graphData.nodes, links: graphData.links }}
                     width={800}
                     height={400}
                     backgroundColor="#ffffff"
                     nodeColor={(node: any) => {
-                      if (node.type === "experiment") return "#f97316";
-                      const isExpanded = expandedAttrs.has(node.id);
-                      if (node.type === "change") return isExpanded ? "#1d4ed8" : "#3b82f6";
-                      if (node.type === "element") return isExpanded ? "#059669" : "#10b981";
+                      if (node.type === "change") return expandedAttrs.has(node.id) ? "#1d4ed8" : "#3b82f6";
+                      if (node.type === "element") return expandedAttrs.has(node.id) ? "#059669" : "#10b981";
                       return "#6b7280";
                     }}
                     nodeLabel={(n: any) => {
-                      if (n.type === "experiment") return `${n.label}${n.title ? ` — ${n.title}` : ""}`;
                       const cnt = graphData.patternCounts.get(n.id) ?? 0;
-                      const expanded = expandedAttrs.has(n.id);
-                      return `${n.label} (${cnt} experiments)${expanded ? " — click to collapse" : " — click to expand"}`;
+                      const selected = expandedAttrs.has(n.id);
+                      return `${n.label} (${cnt} experiments)${selected ? " ✓" : ""}`;
                     }}
                     nodeVal={(n: any) => {
-                      if (n.type === "experiment") return 3;
                       const cnt = graphData.patternCounts.get(n.id) ?? 1;
                       return Math.max(4, Math.min(14, cnt * 0.8));
                     }}
@@ -655,24 +623,69 @@ export default function AskAI() {
                     warmupTicks={30}
                     cooldownTicks={100}
                     onNodeClick={(node: any) => {
-                      if (node.type === "experiment") {
-                        if (node.uuid) setModalId(node.uuid);
-                        return;
-                      }
                       if (node.type === "change" || node.type === "element") {
                         setExpandedAttrs((prev) => {
                           const next = new Set(prev);
-                          if (next.has(node.id)) {
-                            next.delete(node.id);
-                          } else {
-                            next.add(node.id);
-                          }
+                          if (next.has(node.id)) next.delete(node.id);
+                          else next.add(node.id);
                           return next;
                         });
                       }
                     }}
                   />
                 </div>
+
+                {/* Experiments panel — appears below the graph when a node is selected */}
+                {uniqueExps.length > 0 ? (
+                  <div className="border-t border-gray-200 pt-3 space-y-2">
+                    <div className="text-xs font-semibold text-gray-700">
+                      {uniqueExps.length} related experiment{uniqueExps.length !== 1 ? "s" : ""}
+                    </div>
+                    <div className="max-h-[280px] overflow-y-auto space-y-1.5">
+                      {uniqueExps.map((exp) => (
+                        <button
+                          key={exp.id ?? exp.experimentId}
+                          type="button"
+                          className="w-full text-left rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                          onClick={() => exp.id && setModalId(exp.id)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {exp.testName ?? exp.experimentId}
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 mt-1">
+                                {exp.changeType ? (
+                                  <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                                    {exp.changeType}
+                                  </span>
+                                ) : null}
+                                {exp.elementChanged ? (
+                                  <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                                    {exp.elementChanged}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                            {exp.winningVar ? (
+                              <span className="shrink-0 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 border border-green-200">
+                                Winner: {exp.winningVar}
+                              </span>
+                            ) : (
+                              <span className="shrink-0 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 border border-gray-200">
+                                No winner
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : expandedAttrs.size > 0 ? (
+                  <div className="border-t border-gray-200 pt-3">
+                    <p className="text-xs text-gray-400 italic">No experiments found for this selection.</p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

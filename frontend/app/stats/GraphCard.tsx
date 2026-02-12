@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as ThreeLib from "three";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
@@ -42,13 +42,9 @@ export default function GraphCard({
     title?: string;
   } | null>(null);
   const graphRef = useRef<any>(null);
-  // Reuse a single THREE instance to avoid duplicate-three warnings.
-  const THREE = useMemo(() => {
-    const existing = (globalThis as any).THREE as typeof ThreeLib | undefined;
-    if (existing) return existing;
-    (globalThis as any).THREE = ThreeLib;
-    return ThreeLib;
-  }, []);
+  // The webpack alias in next.config.mjs ensures a single Three.js instance,
+  // so we use the static import directly — no globalThis hack needed.
+  const THREE = ThreeLib;
 
   useEffect(() => {
     if (hasData && graphRef.current) {

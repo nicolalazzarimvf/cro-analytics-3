@@ -34,7 +34,7 @@ function isSelectOnly(sql: string) {
   return !forbidden.some((kw) => trimmed.includes(`${kw} `));
 }
 
-function ensureLimit(sql: string, max = 500) {
+function ensureLimit(sql: string, max = 2000) {
   const hasLimit = /\blimit\s+\d+/i.test(sql);
   if (hasLimit) return sql;
   return `${sql.trim().replace(/;+\s*$/, "")} LIMIT ${max}`;
@@ -227,7 +227,7 @@ CRITICAL RULES:
 - Always select the uuid id, experimentId, testName, changeType, and elementChanged so the UI can link to detail pages and build the experiment graph.
 - SELECT-only. No writes/DDL.
 - Default to the last 12 months if no date range given.
-- Always include a LIMIT <= 500.
+- Always include a LIMIT <= 2000.
 - Prefer dateConcluded; if missing, fall back to dateLaunched.
 - Use ISO dates (YYYY-MM-DD).
 
@@ -323,7 +323,7 @@ async function runGraph(question: string): Promise<GraphResult> {
     onlyFailed: wantsFailed,
     onlyWinners: wantsWinners,
     monthsBack: 12,
-    limit: 200
+    limit: 500
   });
 
   // If no results with date filter, try without
@@ -334,7 +334,7 @@ async function runGraph(question: string): Promise<GraphResult> {
       onlyFailed: wantsFailed,
       onlyWinners: wantsWinners,
       monthsBack: 120, // 10 years = effectively no date filter
-      limit: 200
+      limit: 500
     });
     return { rows: broadRows, rowCount: broadRows.length };
   }
@@ -394,7 +394,7 @@ async function runGraphExperiments(question: string): Promise<GraphExperiment[]>
     FROM "Experiment"
     WHERE ${where.join(" AND ")}
     ORDER BY COALESCE("dateConcluded", "dateLaunched") DESC NULLS LAST
-    LIMIT 100
+    LIMIT 500
   `;
 
   const rows = await prisma.$queryRawUnsafe(sql, ...params);
@@ -408,11 +408,11 @@ async function summarize(
 ) {
   // --- SQL data extraction ---
   const sqlRows = sqlResult?.rows ?? [];
-  const sqlSample = sqlRows.slice(0, 50);
+  const sqlSample = sqlRows.slice(0, 200);
 
   const learningsRaw = sqlRows.filter((r: any) => r && typeof r === "object" && r.lessonLearned);
   const learnings = learningsRaw
-    .slice(0, 20)
+    .slice(0, 50)
     .map((r: any) => ({
       testName: r.testName,
       changeType: r.changeType,
@@ -430,7 +430,7 @@ async function summarize(
   const winners = sqlRows
     .filter((r: any) => r && r.winningVar && r.monthlyExtrap)
     .sort((a: any, b: any) => (Number(b.monthlyExtrap) || 0) - (Number(a.monthlyExtrap) || 0))
-    .slice(0, 5)
+    .slice(0, 10)
     .map((r: any) => ({
       testName: r.testName,
       monthlyExtrap: r.monthlyExtrap,
@@ -449,7 +449,7 @@ async function summarize(
 
   // --- Graph data extraction ---
   const graphRows = graphResult?.rows ?? [];
-  const graphSample = graphRows.slice(0, 30);
+  const graphSample = graphRows.slice(0, 100);
 
   // --- Build prompt sections ---
   let dataSections = "";
