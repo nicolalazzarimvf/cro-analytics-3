@@ -6,17 +6,19 @@ import ReactMarkdown from "react-markdown";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
-type Mode = "auto" | "sql" | "graph";
-
-type AskResult = {
-  kind?: "sql" | "graph";
-  modeUsed: "sql" | "graph";
+type AskResponse = {
   answer?: string;
+  // SQL
   sql?: string;
+  sqlError?: string;
   notes?: string;
   rows: Record<string, any>[];
   rowCount: number;
-  truncated?: boolean;
+  // Graph
+  graphRows: Record<string, any>[];
+  graphRowCount: number;
+  graphError?: string;
+  // General
   error?: string;
 };
 
@@ -51,34 +53,21 @@ function pickCount(row: Record<string, any>) {
   );
 }
 
-function summarizeGraph(res: AskResult) {
-  if (res.error) return `Graph error: ${res.error}`;
-  if (!res.rows?.length) return "Graph ran, but no patterns returned.";
-  const pairs = res.rows.slice(0, 5).map((r) => {
-    const ct = r.changeType ?? "Unknown change type";
-    const el = r.elementChanged ?? "Unknown element";
-    const cnt = pickCount(r);
-    return `- ${ct} → ${el} (${cnt})`;
+function filteredGraphRows(graphRows: Record<string, any>[]) {
+  if (!graphRows?.length) return [];
+  return graphRows.filter((r) => {
+    const ct = (r?.changeType ?? "").toString().toLowerCase();
+    const el = (r?.elementChanged ?? "").toString().toLowerCase();
+    const isUnknownCt = !ct || ct.includes("unknown");
+    const isUnknownEl = !el || el.includes("unknown");
+    const isOtherCt = ct === "other";
+    const isOtherEl = el === "other";
+    return !((isUnknownCt || isOtherCt) && (isUnknownEl || isOtherEl));
   });
-  return `Graph patterns (top ${pairs.length}):\n${pairs.join("\n")}`;
 }
 
-function buildCombined(sqlRes: AskResult | null, graphRes: AskResult | null) {
-  const sqlPart = sqlRes?.error
-    ? `SQL error: ${sqlRes.error}`
-    : sqlRes?.answer
-      ? `SQL summary:\n${sqlRes.answer}`
-      : "SQL result below.";
-
-  if (!graphRes) return sqlPart;
-
-  const graphPart = summarizeGraph(graphRes);
-  return `${sqlPart}\n\n${graphPart}`;
-}
-
-function renderGraphChart(res: AskResult) {
-  if (res.kind !== "graph") return null;
-  const rows = filteredGraphRows(res);
+function renderGraphChart(graphRows: Record<string, any>[]) {
+  const rows = filteredGraphRows(graphRows);
   if (!rows.length) return null;
   const items = rows
     .slice(0, 10)
@@ -113,9 +102,8 @@ function renderGraphChart(res: AskResult) {
   );
 }
 
-function renderGraphNetwork(res: AskResult) {
-  if (res.kind !== "graph") return null;
-  const rows = filteredGraphRows(res);
+function renderGraphNetwork(graphRows: Record<string, any>[]) {
+  const rows = filteredGraphRows(graphRows);
   if (!rows.length) return null;
   const edges = rows
     .slice(0, 12)
@@ -203,22 +191,8 @@ function renderGraphNetwork(res: AskResult) {
   );
 }
 
-function filteredGraphRows(res: AskResult) {
-  if (res.kind !== "graph" || !res.rows?.length) return [];
-  return res.rows.filter((r) => {
-    const ct = (r?.changeType ?? "").toString().toLowerCase();
-    const el = (r?.elementChanged ?? "").toString().toLowerCase();
-    const isUnknownCt = !ct || ct.includes("unknown");
-    const isUnknownEl = !el || el.includes("unknown");
-    const isOtherCt = ct === "other";
-    const isOtherEl = el === "other";
-    return !((isUnknownCt || isOtherCt) && (isUnknownEl || isOtherEl));
-  });
-}
-
-function renderGraph3D(res: AskResult) {
-  if (res.kind !== "graph") return null;
-  const rows = filteredGraphRows(res).slice(0, 20);
+function renderGraph3D(graphRows: Record<string, any>[]) {
+  const rows = filteredGraphRows(graphRows).slice(0, 20);
   if (!rows.length) return null;
 
   const nodesMap = new Map<string, { id: string; label: string; type: string }>();
@@ -260,58 +234,16 @@ function renderGraph3D(res: AskResult) {
 
 export default function AskAI() {
   const [question, setQuestion] = useState("");
-  const [mode, setMode] = useState<Mode>("auto");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<AskResult | null>(null);
-  const [combinedAnswer, setCombinedAnswer] = useState<string | null>(null);
+  const [result, setResult] = useState<AskResponse | null>(null);
   const [modalId, setModalId] = useState<string | null>(null);
   const [tablePage, setTablePage] = useState(1);
-
-  const fetchSql = async () => {
-    const res = await fetch("/api/ai/query", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question })
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      return { kind: "sql" as const, error: json.error || "SQL request failed", rows: [], rowCount: 0 };
-    }
-    return {
-      kind: "sql" as const,
-      ...json,
-      rows: json.rows || [],
-      rowCount: json.rowCount ?? (json.rows ? json.rows.length : 0),
-      truncated: json.truncated ?? false
-    };
-  };
-
-  const fetchGraph = async () => {
-    const res = await fetch("/api/ai/graph", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question })
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      return { kind: "graph" as const, error: json.error || "Graph request failed", rows: [], rowCount: 0 };
-    }
-    return {
-      kind: "graph" as const,
-      sql: json.sql,
-      rows: json.rows || [],
-      rowCount: json.rowCount ?? (json.rows ? json.rows.length : 0),
-      truncated: json.truncated ?? false,
-      answer: `Graph result for: ${question}`
-    };
-  };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setResult(null);
-    setCombinedAnswer(null);
     if (!question.trim()) {
       setError("Please enter a question.");
       return;
@@ -321,26 +253,24 @@ export default function AskAI() {
       const res = await fetch("/api/ai/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, mode })
+        body: JSON.stringify({ question })
       });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error || "Request failed");
       } else {
-        const modeUsed = json.modeUsed as "sql" | "graph";
-        const rowCount = json.rowCount ?? (json.rows ? json.rows.length : 0);
-        const normalized: AskResult = {
-          modeUsed,
+        setResult({
           answer: json.answer,
           sql: json.sql,
+          sqlError: json.sqlError,
           notes: json.notes,
           rows: json.rows ?? [],
-          rowCount,
-          truncated: json.truncated ?? false
-        };
-        setResult(normalized);
-        setCombinedAnswer(json.answer ?? null);
-        setTablePage(1); // reset pagination on new result
+          rowCount: json.rowCount ?? 0,
+          graphRows: json.graphRows ?? [],
+          graphRowCount: json.graphRowCount ?? 0,
+          graphError: json.graphError,
+        });
+        setTablePage(1);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Request failed");
@@ -349,7 +279,7 @@ export default function AskAI() {
     }
   };
 
-  const renderTable = (res: AskResult) => {
+  const renderTable = (res: { rows: Record<string, any>[]; rowCount: number }) => {
     if (!res?.rows?.length) return null;
     // If rows contain a graph payload (identity/labels/properties), flatten to properties for display.
     const normalizedRows = res.rows.map((row) => {
@@ -498,7 +428,7 @@ export default function AskAI() {
           </tbody>
         </table>
         <div className="bg-gray-50 px-4 py-2 text-xs text-gray-600">
-          Showing {normalizedRows.length} of {res.rowCount} rows {res.truncated ? "(truncated)" : ""}
+          Showing {normalizedRows.length} of {res.rowCount} rows
         </div>
             <div className="flex items-center justify-between px-4 py-2 text-xs text-gray-600">
               <span>
@@ -537,41 +467,6 @@ export default function AskAI() {
           </p>
         </div>
       </div>
-      <div className="mt-3 flex items-center gap-3 text-sm text-gray-700">
-        <label className="flex items-center gap-1">
-          <input
-            type="radio"
-            name="mode"
-            value="auto"
-            checked={mode === "auto"}
-            onChange={() => setMode("auto")}
-            className="h-4 w-4 accent-brand-600"
-          />
-          Auto (best mode)
-        </label>
-        <label className="flex items-center gap-1">
-          <input
-            type="radio"
-            name="mode"
-            value="sql"
-            checked={mode === "sql"}
-            onChange={() => setMode("sql")}
-            className="h-4 w-4 accent-brand-600"
-          />
-          SQL (Postgres)
-        </label>
-        <label className="flex items-center gap-1">
-          <input
-            type="radio"
-            name="mode"
-            value="graph"
-            checked={mode === "graph"}
-            onChange={() => setMode("graph")}
-            className="h-4 w-4 accent-brand-600"
-          />
-          Graph (pattern analysis)
-        </label>
-      </div>
       <form onSubmit={onSubmit} className="mt-4 space-y-3">
         <textarea
           value={question}
@@ -589,7 +484,7 @@ export default function AskAI() {
         </button>
       </form>
       {error ? <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
-      {combinedAnswer ? (
+      {result?.answer ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm ai-response">
           <style jsx global>{`
             .ai-response h2 {
@@ -693,45 +588,57 @@ export default function AskAI() {
               border-top: 1px solid #e5e7eb;
             }
           `}</style>
-          <ReactMarkdown>{combinedAnswer}</ReactMarkdown>
+          <ReactMarkdown>{result.answer}</ReactMarkdown>
         </div>
       ) : null}
       {result ? (
         <details className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Show source results (SQL / Graph)</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Show source results (SQL + Graph)</summary>
           <div className="mt-3 space-y-4">
+            {/* SQL results section */}
             <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 shadow-sm space-y-3">
-                <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
-                  <span>{result.modeUsed === "sql" ? "SQL result" : "Graph result"}</span>
-                </div>
+              <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
+                <span>SQL result ({result.rowCount} rows)</span>
+                {result.sqlError ? <span className="text-xs text-red-600">{result.sqlError}</span> : null}
+              </div>
               {result.notes ? (
                 <div className="text-xs text-gray-600">
                   Notes: <span className="font-medium text-gray-800">{result.notes}</span>
                 </div>
               ) : null}
-              {result.modeUsed === "sql" && result.sql ? (
+              {result.sql ? (
                 <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
                   <summary className="cursor-pointer text-sm font-semibold text-gray-900">SQL used</summary>
                   <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{result.sql}</pre>
                 </details>
               ) : null}
-              {result.modeUsed === "graph" && result.sql ? (
+              {result.rows.length > 0 ? (
                 <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
-                  <summary className="cursor-pointer text-sm font-semibold text-gray-900">Graph SQL used</summary>
-                  <pre className="mt-2 whitespace-pre-wrap text-xs text-gray-700">{result.sql}</pre>
+                  <summary className="cursor-pointer text-sm font-semibold text-gray-900">Data table</summary>
+                  {renderTable({ rows: result.rows, rowCount: result.rowCount })}
                 </details>
               ) : null}
-                  {result.modeUsed === "graph" ? (
-                    <div className="space-y-3">
-                      {renderGraphChart(result)}
-                      {renderGraphNetwork(result)}
-                      {renderGraph3D(result)}
-                    </div>
-                  ) : null}
-              <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
-                <summary className="cursor-pointer text-sm font-semibold text-gray-900">Data used</summary>
-                {renderTable(result)}
-              </details>
+            </div>
+
+            {/* Graph results section */}
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 shadow-sm space-y-3">
+              <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
+                <span>Graph patterns ({result.graphRowCount} patterns)</span>
+                {result.graphError ? <span className="text-xs text-red-600">{result.graphError}</span> : null}
+              </div>
+              {result.graphRows.length > 0 ? (
+                <div className="space-y-3">
+                  {renderGraphChart(result.graphRows)}
+                  {renderGraphNetwork(result.graphRows)}
+                  {renderGraph3D(result.graphRows)}
+                  <details className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800">
+                    <summary className="cursor-pointer text-sm font-semibold text-gray-900">Pattern data</summary>
+                    {renderTable({ rows: result.graphRows, rowCount: result.graphRowCount })}
+                  </details>
+                </div>
+              ) : !result.graphError ? (
+                <div className="text-xs text-gray-500">No graph patterns found for this query.</div>
+              ) : null}
             </div>
           </div>
         </details>

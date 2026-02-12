@@ -4,7 +4,19 @@ import { callLLM } from "@/lib/ai/client";
 import { prisma } from "@/lib/db/client";
 import { queryGraphPatterns } from "@/lib/graph/postgres";
 
-type Mode = "auto" | "sql" | "graph";
+type SqlResult = {
+  sql: string;
+  notes: string;
+  rows: Record<string, unknown>[];
+  rowCount: number;
+  error?: string;
+};
+
+type GraphResult = {
+  rows: Array<{ changeType: string; elementChanged: string; experimentCount: number }>;
+  rowCount: number;
+  error?: string;
+};
 
 function isSelectOnly(sql: string) {
   const trimmed = sql.trim().toLowerCase();
@@ -159,56 +171,7 @@ function enforceLaunchedBy(question: string, sql: string) {
   return sql;
 }
 
-function classifyMode(question: string): "sql" | "graph" {
-  const q = question.toLowerCase();
-  
-  // Graph is best for: relationship/pattern analysis across change types and elements
-  // SQL is best for: listings, counts, specific filters, learnings, winners/losers
-  
-  // Graph patterns - relationship/pattern queries that benefit from aggregated graph view
-  const graphPatterns = [
-    /relationship[s]?\s+(?:exist\s+)?between/i,
-    /connection[s]?\s+(?:exist\s+)?between/i,
-    /co-?occur/i,
-    /co-?occurrence/i,
-    /pattern[s]?\s+across/i,
-    /clusters?\s+of/i,
-    /how\s+are\s+.*\s+connected/i,
-    /what\s+connects/i,
-    /connected\s+to\s+.*\s+outcomes?/i
-  ];
-  
-  // Check graph patterns first - these are strong signals
-  for (const pattern of graphPatterns) {
-    if (pattern.test(q)) {
-      console.log(`[classifyMode] Graph pattern matched: ${pattern}`);
-      return "graph";
-    }
-  }
-  
-  // These should go to SQL (better handled there)
-  const sqlOverrides = [
-    "list",
-    "what did we learn",
-    "what worked",
-    "what hasn't",
-    "biggest win",
-    "largest win",
-    "top winner",
-    "failed experiment",
-    "summary of",
-    "how many"
-  ];
-  
-  // If any SQL override matches, use SQL
-  if (sqlOverrides.some((k) => q.includes(k))) {
-    return "sql";
-  }
-  
-  return "sql";
-}
-
-async function runSql(question: string) {
+async function runSql(question: string): Promise<SqlResult> {
   const sqlPrompt = [
     {
       role: "system" as const,
@@ -284,7 +247,7 @@ Schema columns include experimentId, testName, vertical, geo, targetMetric, chan
   return { sql: finalSql, notes: parsed.notes ?? "", rows: normalized, rowCount: normalized.length };
 }
 
-async function runGraph(question: string) {
+async function runGraph(question: string): Promise<GraphResult> {
   // Extract context from question for filtering
   const q = question.toLowerCase();
   const wantsFailed = q.includes("fail") || q.includes("failed") || q.includes("failing");
@@ -329,30 +292,24 @@ async function runGraph(question: string) {
       monthsBack: 120, // 10 years = effectively no date filter
       limit: 200
     });
-    return {
-      sql: "(graph pattern query from Postgres)",
-      rows: broadRows,
-      rowCount: broadRows.length,
-    };
+    return { rows: broadRows, rowCount: broadRows.length };
   }
 
-  return {
-    sql: "(graph pattern query from Postgres)",
-    rows,
-    rowCount: rows.length,
-  };
+  return { rows, rowCount: rows.length };
 }
 
-async function summarize(question: string, modeUsed: "sql" | "graph", detail: any) {
-  // Give the model a rich slice of data for comprehensive analysis.
-  const allRows = detail.rows ?? [];
-  const rows = allRows.slice(0, 50); // More rows for better analysis
-  const totalRowCount = allRows.length;
-  
-  // Extract experiments with learnings
-  const learningsRaw = allRows.filter((r: any) => r && typeof r === "object" && r.lessonLearned);
+async function summarize(
+  question: string,
+  sqlResult: SqlResult | null,
+  graphResult: GraphResult | null
+) {
+  // --- SQL data extraction ---
+  const sqlRows = sqlResult?.rows ?? [];
+  const sqlSample = sqlRows.slice(0, 50);
+
+  const learningsRaw = sqlRows.filter((r: any) => r && typeof r === "object" && r.lessonLearned);
   const learnings = learningsRaw
-    .slice(0, 20) // More learnings for richer insights
+    .slice(0, 20)
     .map((r: any) => ({
       testName: r.testName,
       changeType: r.changeType,
@@ -366,11 +323,10 @@ async function summarize(question: string, modeUsed: "sql" | "graph", detail: an
       vertical: r.vertical,
       geo: r.geo
     }));
-  
-  // Extract top winners for highlights
-  const winners = allRows
+
+  const winners = sqlRows
     .filter((r: any) => r && r.winningVar && r.monthlyExtrap)
-    .sort((a: any, b: any) => (b.monthlyExtrap || 0) - (a.monthlyExtrap || 0))
+    .sort((a: any, b: any) => (Number(b.monthlyExtrap) || 0) - (Number(a.monthlyExtrap) || 0))
     .slice(0, 5)
     .map((r: any) => ({
       testName: r.testName,
@@ -379,21 +335,68 @@ async function summarize(question: string, modeUsed: "sql" | "graph", detail: an
       crChangeV1: r.crChangeV1,
       vertical: r.vertical
     }));
-  
-  // Calculate basic stats
+
   const stats = {
-    totalExperiments: totalRowCount,
+    totalExperiments: sqlRows.length,
     withLearnings: learningsRaw.length,
-    withWinners: allRows.filter((r: any) => r && r.winningVar).length,
-    uniqueVerticals: [...new Set(allRows.map((r: any) => r?.vertical).filter(Boolean))].length,
-    uniqueGeos: [...new Set(allRows.map((r: any) => r?.geo).filter(Boolean))].length
+    withWinners: sqlRows.filter((r: any) => r && r.winningVar).length,
+    uniqueVerticals: [...new Set(sqlRows.map((r: any) => r?.vertical).filter(Boolean))].length,
+    uniqueGeos: [...new Set(sqlRows.map((r: any) => r?.geo).filter(Boolean))].length
   };
-  
-  const source = modeUsed === "sql" ? `SQL: ${detail.sql}` : `Graph pattern query (Postgres)`;
+
+  // --- Graph data extraction ---
+  const graphRows = graphResult?.rows ?? [];
+  const graphSample = graphRows.slice(0, 30);
+
+  // --- Build prompt sections ---
+  let dataSections = "";
+
+  if (sqlResult && !sqlResult.error && sqlRows.length > 0) {
+    dataSections += `
+## SQL Results (individual experiments)
+SQL used: ${sqlResult.sql}
+
+Data Summary:
+- Total rows: ${sqlRows.length}
+- Experiments with learnings: ${stats.withLearnings}
+- Experiments with winners: ${stats.withWinners}
+- Unique verticals: ${stats.uniqueVerticals}
+- Unique geos: ${stats.uniqueGeos}
+
+Top Winners:
+${JSON.stringify(winners, null, 2)}
+
+Sample Rows (${sqlSample.length} of ${sqlRows.length}):
+${JSON.stringify(sqlSample, null, 2)}
+
+Experiments with Learnings (${learnings.length}):
+${JSON.stringify(learnings, null, 2)}
+`;
+  } else if (sqlResult?.error) {
+    dataSections += `\n## SQL Results\nSQL query failed: ${sqlResult.error}\n`;
+  }
+
+  if (graphResult && !graphResult.error && graphRows.length > 0) {
+    dataSections += `
+## Graph Pattern Results (aggregated changeType → elementChanged combinations)
+Total patterns: ${graphRows.length}
+
+Top patterns (${graphSample.length}):
+${JSON.stringify(graphSample, null, 2)}
+`;
+  } else if (graphResult?.error) {
+    dataSections += `\n## Graph Pattern Results\nGraph query failed: ${graphResult.error}\n`;
+  }
+
   const prompt = [
     {
       role: "system" as const,
-      content: `You are a senior CRO analyst. Generate a comprehensive, detailed analysis from the provided experiment data.
+      content: `You are a senior CRO analyst. Generate a comprehensive analysis from the provided experiment data.
+You have two data sources:
+1. **SQL results** — individual experiment rows with full details (names, metrics, learnings, winners).
+2. **Graph pattern results** — aggregated counts of changeType → elementChanged combinations showing what types of changes are most common.
+
+Use BOTH sources to give the richest possible answer. Draw specific experiment examples from the SQL data and high-level patterns from the graph data.
 
 OUTPUT FORMAT (use markdown headers and formatting):
 
@@ -403,60 +406,42 @@ A 2-3 sentence overview answering the user's question directly.
 ## Key Highlights
 • 4-6 bullet points with specific numbers, percentages, and experiment names
 • Include top performers with their metrics (e.g., "+15% CR", "£50K monthly impact")
-• Mention patterns you observe in the data
+• Mention patterns you observe in both SQL and graph data
 
 ## Data Coverage
 • Total experiments analyzed: X
-• Time window: [infer from data or mention if not specified]
+• Graph patterns found: X
+• Time window: [infer from data]
 • Verticals covered: X unique
 • Geographic regions: X unique
 
 ## Detailed Learnings
 For each major insight, provide:
 ### [Learning Category/Theme]
-**What we tested:** Brief description of the experiment approach
+**What we tested:** Brief description
 **What worked:** Specific results with metrics
-**What didn't work:** Any negative findings (if applicable)
-**Key quote:** Direct quote from lessonLearned field (if available)
-**Example experiments:** List 1-2 specific test names
+**What didn't work:** Negative findings (if applicable)
+**Key quote:** Direct quote from lessonLearned (if available)
+**Example experiments:** 1-2 specific test names
 
-Include 3-5 detailed learning sections based on the data.
+Include 3-5 detailed learning sections.
 
 ## Patterns & Trends
-• Cross-cutting patterns you observe (e.g., "CTA changes consistently outperform form changes")
-• Vertical-specific insights (e.g., "Solar Panels responds well to trust signals")
+• Cross-cutting patterns from the graph data (e.g., "CTA changes on Buttons are the most common combination with X experiments")
+• Vertical-specific insights
 • Geographic patterns (if applicable)
 
 ## Recommended Next Steps
-1. Specific, actionable recommendation based on the data
-2. Another specific recommendation
+1. Specific, actionable recommendation
+2. Another recommendation
 3. Questions to explore further
 
 Be specific and data-driven. Quote actual test names, metrics, and lessons. Avoid generic statements.
-If the data is limited, acknowledge it but still provide whatever insights you can.`
+If one data source is empty or failed, still provide analysis from the other.`
     },
     {
       role: "user" as const,
-      content: `Question: ${question}
-
-Query Mode: ${modeUsed}
-${source}
-
-Data Summary:
-- Total rows: ${totalRowCount}
-- Experiments with learnings: ${stats.withLearnings}
-- Experiments with winners: ${stats.withWinners}
-- Unique verticals: ${stats.uniqueVerticals}
-- Unique geos: ${stats.uniqueGeos}
-
-Top Winners:
-${JSON.stringify(winners, null, 2)}
-
-Sample Rows (${rows.length} of ${totalRowCount}):
-${JSON.stringify(rows, null, 2)}
-
-Experiments with Learnings (${learnings.length}):
-${JSON.stringify(learnings, null, 2)}`
+      content: `Question: ${question}\n${dataSections}`
     }
   ];
   const answer = await callLLM({ messages: prompt, maxTokens: 2000 });
@@ -471,9 +456,8 @@ function ensureAuthorized(req: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const body = (await request.json().catch(() => ({}))) as { question?: string; mode?: Mode };
+  const body = (await request.json().catch(() => ({}))) as { question?: string };
   const question = (body.question ?? "").toString().trim();
-  const mode = (body.mode as Mode) ?? "auto";
   if (!question) return NextResponse.json({ error: "Question is required" }, { status: 400 });
 
   const internalAllowed = ensureAuthorized(request);
@@ -486,63 +470,46 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Smart routing: auto-detect best mode, or respect explicit choice
-    let chosen: "sql" | "graph";
-    if (mode === "auto") {
-      chosen = classifyMode(question);
-      console.log(`[AI Ask] Auto-classified "${question.slice(0, 50)}..." as ${chosen}`);
-    } else {
-      chosen = mode === "graph" ? "graph" : "sql";
-    }
-    
-    let primaryResult: any;
-    let modeUsed: "sql" | "graph" = chosen;
-    let fallbackUsed = false;
+    // Run SQL and Graph in parallel — both are independent
+    const [sqlResult, graphResult] = await Promise.all([
+      runSql(question).catch((e): SqlResult => {
+        console.error(`[AI Ask] SQL failed:`, e instanceof Error ? e.message : e);
+        return { sql: "", notes: "", rows: [], rowCount: 0, error: e instanceof Error ? e.message : String(e) };
+      }),
+      runGraph(question).catch((e): GraphResult => {
+        console.error(`[AI Ask] Graph failed:`, e instanceof Error ? e.message : e);
+        return { rows: [], rowCount: 0, error: e instanceof Error ? e.message : String(e) };
+      }),
+    ]);
 
-    if (chosen === "graph") {
-      // Try graph first (now uses Postgres)
-      try {
-        primaryResult = await runGraph(question);
-        modeUsed = "graph";
-        
-        // If graph returns no meaningful results, fallback to SQL (unless explicitly requested)
-        if ((!primaryResult.rows?.length || primaryResult.rows.length < 3) && mode === "auto") {
-          console.log(`[AI Ask] Graph returned few results (${primaryResult.rows?.length || 0}), falling back to SQL`);
-          primaryResult = await runSql(question);
-          modeUsed = "sql";
-          fallbackUsed = true;
-        }
-      } catch (e) {
-        if (mode === "auto") {
-          // Auto mode: fallback to SQL on graph error
-          console.log(`[AI Ask] Graph failed, falling back to SQL:`, e instanceof Error ? e.message : e);
-          primaryResult = await runSql(question);
-          modeUsed = "sql";
-          fallbackUsed = true;
-        } else {
-          // Explicit graph mode: surface the error
-          const msg = e instanceof Error ? e.message : String(e);
-          return NextResponse.json({ error: msg }, { status: 400 });
-        }
-      }
-    } else {
-      // SQL mode
-      primaryResult = await runSql(question);
-      modeUsed = "sql";
+    // If both failed, return an error
+    if (sqlResult.error && graphResult.error) {
+      return NextResponse.json(
+        { error: `Both queries failed. SQL: ${sqlResult.error}. Graph: ${graphResult.error}` },
+        { status: 400 }
+      );
     }
 
-    const answer = await summarize(question, modeUsed, primaryResult);
+    console.log(
+      `[AI Ask] SQL: ${sqlResult.error ? "FAILED" : `${sqlResult.rowCount} rows`}, ` +
+      `Graph: ${graphResult.error ? "FAILED" : `${graphResult.rowCount} patterns`}`
+    );
+
+    // Summarize using both result sets
+    const answer = await summarize(question, sqlResult, graphResult);
 
     return NextResponse.json({
-      modeRequested: mode,
-      modeClassified: chosen,
-      modeUsed,
       answer,
-      rows: primaryResult.rows ?? [],
-      rowCount: primaryResult.rowCount ?? (primaryResult.rows ? primaryResult.rows.length : 0),
-      sql: primaryResult.sql,
-      notes: primaryResult.notes,
-      fallbackUsed
+      // SQL results for the data table
+      sql: sqlResult.sql || undefined,
+      sqlError: sqlResult.error || undefined,
+      notes: sqlResult.notes || undefined,
+      rows: sqlResult.rows ?? [],
+      rowCount: sqlResult.rowCount ?? 0,
+      // Graph results for the pattern visualisations
+      graphRows: graphResult.rows ?? [],
+      graphRowCount: graphResult.rowCount ?? 0,
+      graphError: graphResult.error || undefined,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
