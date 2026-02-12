@@ -393,107 +393,198 @@ export default function AskAI() {
       </form>
       {error ? <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div> : null}
       {result?.answer ? (
-        <div className="mt-4 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-sm ai-response">
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm ai-response">
           <style jsx global>{`
+            /* ── Container ── */
+            .ai-response { padding: 0; }
+
+            /* ── H2 sections ── */
             .ai-response h2 {
-              margin-top: 1.5rem;
-              margin-bottom: 0.75rem;
-              font-size: 1.125rem;
+              margin: 0;
+              padding: 0.75rem 1.25rem;
+              font-size: 0.8125rem;
               font-weight: 700;
-              color: #111827;
-              border-bottom: 1px solid #f3f4f6;
-              padding-bottom: 0.5rem;
+              letter-spacing: 0.04em;
+              text-transform: uppercase;
+              color: #465fff;
+              background: #f8fafc;
+              border-top: 1px solid #e5e7eb;
             }
-            .ai-response h2:first-child { margin-top: 0; }
+            .ai-response h2:first-child {
+              border-top: none;
+              border-radius: 0.75rem 0.75rem 0 0;
+            }
+
+            /* ── Section body (content between h2s) ── */
+            .ai-response h2 + * { margin-top: 0; }
+            .ai-response h2 ~ p,
+            .ai-response h2 ~ ul,
+            .ai-response h2 ~ ol,
+            .ai-response h2 ~ blockquote {
+              padding-left: 1.25rem;
+              padding-right: 1.25rem;
+            }
+
+            /* ── H3 sub-sections (learning cards) ── */
             .ai-response h3 {
-              margin-top: 1rem;
-              margin-bottom: 0.5rem;
-              font-size: 1rem;
+              margin: 0.75rem 1.25rem 0.5rem;
+              padding: 0.625rem 0.875rem;
+              font-size: 0.875rem;
               font-weight: 600;
               color: #1f2937;
+              background: #f9fafb;
+              border: 1px solid #e5e7eb;
+              border-radius: 0.5rem;
             }
+            .ai-response h3 + p,
+            .ai-response h3 + ul {
+              margin-left: 1.25rem;
+              margin-right: 1.25rem;
+              padding-left: 0.875rem;
+              padding-right: 0.875rem;
+              border-left: 2px solid #e5e7eb;
+            }
+
+            /* ── H4 ── */
             .ai-response h4 {
-              margin-top: 0.75rem;
-              margin-bottom: 0.25rem;
-              font-size: 0.875rem;
+              margin: 0.625rem 1.25rem 0.25rem;
+              font-size: 0.8125rem;
               font-weight: 600;
               color: #374151;
             }
+
+            /* ── Paragraphs ── */
             .ai-response p {
-              margin-bottom: 0.5rem;
+              margin-bottom: 0.625rem;
+              padding-top: 0.375rem;
               font-size: 0.875rem;
               color: #374151;
-              line-height: 1.625;
+              line-height: 1.7;
             }
-            .ai-response ul {
-              margin-bottom: 0.75rem;
-              padding-left: 0;
-              list-style: none;
+            .ai-response > p:first-of-type {
+              padding: 1rem 1.25rem 0;
             }
-            .ai-response ul li {
-              display: flex;
-              align-items: flex-start;
-              gap: 0.5rem;
-              font-size: 0.875rem;
-              color: #374151;
-              margin-bottom: 0.375rem;
-            }
-            .ai-response ul li::before {
-              content: "•";
-              color: #465fff;
-              font-weight: 600;
-              flex-shrink: 0;
-              margin-top: 0.125rem;
-            }
-            .ai-response ol {
-              margin-bottom: 0.75rem;
-              padding-left: 0;
-              list-style: none;
-              counter-reset: ol-counter;
-            }
-            .ai-response ol li {
-              display: flex;
-              align-items: flex-start;
-              gap: 0.5rem;
-              font-size: 0.875rem;
-              color: #374151;
-              margin-bottom: 0.375rem;
-              counter-increment: ol-counter;
-            }
-            .ai-response ol li::before {
-              content: counter(ol-counter) ".";
-              color: #465fff;
-              font-weight: 600;
-              flex-shrink: 0;
-              min-width: 1.25rem;
-            }
+
+            /* ── Strong labels (What we tested:, Key quote:, etc.) ── */
             .ai-response strong {
               font-weight: 600;
               color: #111827;
             }
+            .ai-response p > strong:first-child {
+              display: inline-block;
+              margin-bottom: 0.125rem;
+              font-size: 0.75rem;
+              font-weight: 700;
+              letter-spacing: 0.02em;
+              text-transform: uppercase;
+              color: #6b7280;
+            }
+
+            /* ── Unordered lists ── */
+            .ai-response ul {
+              margin-top: 0.25rem;
+              margin-bottom: 0.75rem;
+              padding-left: 1.25rem;
+              padding-right: 1.25rem;
+              list-style: none;
+            }
+            .ai-response ul li {
+              position: relative;
+              padding-left: 1rem;
+              font-size: 0.875rem;
+              color: #374151;
+              line-height: 1.65;
+              margin-bottom: 0.375rem;
+            }
+            .ai-response ul li::before {
+              content: "";
+              position: absolute;
+              left: 0;
+              top: 0.55em;
+              width: 5px;
+              height: 5px;
+              border-radius: 50%;
+              background: #465fff;
+            }
+
+            /* ── Ordered lists ── */
+            .ai-response ol {
+              margin-top: 0.25rem;
+              margin-bottom: 0.75rem;
+              padding-left: 1.25rem;
+              padding-right: 1.25rem;
+              list-style: none;
+              counter-reset: ol-counter;
+            }
+            .ai-response ol li {
+              position: relative;
+              padding-left: 1.75rem;
+              font-size: 0.875rem;
+              color: #374151;
+              line-height: 1.65;
+              margin-bottom: 0.5rem;
+              counter-increment: ol-counter;
+            }
+            .ai-response ol li::before {
+              content: counter(ol-counter);
+              position: absolute;
+              left: 0;
+              top: 0.05em;
+              width: 1.25rem;
+              height: 1.25rem;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 0.6875rem;
+              font-weight: 700;
+              color: white;
+              background: #465fff;
+              border-radius: 50%;
+            }
+
+            /* ── Emphasis ── */
             .ai-response em {
               font-style: italic;
               color: #6b7280;
             }
+
+            /* ── Inline code ── */
             .ai-response code {
               background: #f3f4f6;
               padding: 0.125rem 0.375rem;
               border-radius: 0.25rem;
               font-size: 0.75rem;
               font-family: monospace;
+              color: #465fff;
             }
+
+            /* ── Blockquotes ── */
             .ai-response blockquote {
-              border-left: 4px solid #93c5fd;
+              border-left: 3px solid #465fff;
               background: #eff6ff;
-              padding: 0.5rem 1rem;
-              margin: 0.75rem 0;
-              font-style: italic;
-              color: #374151;
+              padding: 0.75rem 1rem;
+              margin: 0.75rem 1.25rem;
+              border-radius: 0 0.5rem 0.5rem 0;
             }
+            .ai-response blockquote p {
+              margin: 0;
+              padding: 0;
+              font-size: 0.8125rem;
+              font-style: italic;
+              color: #1e40af;
+              line-height: 1.6;
+            }
+
+            /* ── Horizontal rules ── */
             .ai-response hr {
-              margin: 1rem 0;
+              margin: 0;
               border: none;
               border-top: 1px solid #e5e7eb;
+            }
+
+            /* ── Bottom padding ── */
+            .ai-response > *:last-child {
+              padding-bottom: 1rem;
             }
           `}</style>
           <ReactMarkdown>{result.answer}</ReactMarkdown>
