@@ -9,7 +9,7 @@ const nextConfig = {
     // one instance is loaded, silencing the "Multiple instances" warning.
     config.resolve.alias = {
       ...config.resolve.alias,
-      three: resolve("node_modules/three"),
+      "three$": resolve("node_modules/three"),
     };
     return config;
   },
