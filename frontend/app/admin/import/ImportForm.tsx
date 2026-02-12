@@ -25,16 +25,26 @@ export default function ImportForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12, maxWidth: 560 }}>
-      <label>
+    <form onSubmit={onSubmit} className="mt-6 grid max-w-xl gap-4">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         CSV file
-        <input name="file" type="file" accept=".csv,text/csv" required />
+        <input
+          name="file"
+          type="file"
+          accept=".csv,text/csv"
+          required
+          className="mt-2 block w-full rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:rounded file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-700 dark:file:bg-gray-700 dark:file:text-gray-300"
+        />
       </label>
-      <button type="submit" disabled={isSubmitting}>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+      >
         {isSubmitting ? "Importing…" : "Import"}
       </button>
       {result ? (
-        <pre style={{ whiteSpace: "pre-wrap", padding: 12, background: "#f8fafc" }}>
+        <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/50 p-4 text-xs text-gray-800 dark:text-gray-200">
           {result}
         </pre>
       ) : null}

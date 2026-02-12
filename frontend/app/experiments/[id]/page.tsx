@@ -91,11 +91,11 @@ export default async function ExperimentDetail({
       {!isBare ? (
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm text-gray-600">Experiment</p>
-            <h1 className="text-2xl font-semibold text-gray-900">
+            <p className="text-sm text-gray-600 dark:text-gray-400">Experiment</p>
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
               {experiment.experimentId || "—"}
             </h1>
-            <p className="mt-1 text-gray-700">{experiment.testName || "Untitled test"}</p>
+            <p className="mt-1 text-gray-700 dark:text-gray-300">{experiment.testName || "Untitled test"}</p>
             {experiment.optimizelyLink ? (
               <p className="mt-2 text-sm">
                 <a
@@ -111,7 +111,7 @@ export default async function ExperimentDetail({
           </div>
           <Link
             href={backHref}
-            className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             ← Back
           </Link>
@@ -119,38 +119,38 @@ export default async function ExperimentDetail({
       ) : null}
 
       <div className="mt-6 grid gap-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-          <div className="text-sm text-gray-600">Launched by</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Launched by</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
             {experiment.launchedBy?.trim() || "—"}
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-            <div className="text-sm text-gray-600">Vertical</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">
+            <div className="text-sm text-gray-600 dark:text-gray-400">Vertical</div>
+            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
               {experiment.vertical ?? "—"}
             </div>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-            <div className="text-sm text-gray-600">Geo</div>
-            <div className="mt-1 text-lg font-semibold text-gray-900">{experiment.geo ?? "—"}</div>
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">
+            <div className="text-sm text-gray-600 dark:text-gray-400">Geo</div>
+            <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{experiment.geo ?? "—"}</div>
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-          <div className="text-sm text-gray-600">Launched</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Launched</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
             {formatDate(experiment.dateLaunched)}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-          <div className="text-sm text-gray-600">Concluded</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Concluded</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
             {formatDate(experiment.dateConcluded)}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm sm:col-span-2">
-          <div className="text-sm text-gray-600">Screenshots / Variations</div>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none sm:col-span-2">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Screenshots / Variations</div>
           <div className="mt-2">
             <ScreenshotList
               experimentId={experiment.experimentId}
@@ -162,30 +162,30 @@ export default async function ExperimentDetail({
             />
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-          <div className="text-sm text-gray-600">Winner</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Winner</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
             {experiment.winningVar?.trim() || "N.D."}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-theme-sm">
-          <div className="text-sm text-gray-600">Monthly extrap</div>
-          <div className="mt-1 text-lg font-semibold text-gray-900">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-theme-sm dark:shadow-none">
+          <div className="text-sm text-gray-600 dark:text-gray-400">Monthly extrap</div>
+          <div className="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">
             {typeof experiment.monthlyExtrap === "number" ? formatMoney(experiment.monthlyExtrap) : "N.D."}
           </div>
         </div>
       </div>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-          <h2 className="text-base font-semibold text-gray-900">Hypothesis</h2>
-          <p className="mt-3 text-sm text-gray-700">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Hypothesis</h2>
+          <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">
             {experiment.hypothesis?.trim() || "N.D."}
           </p>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-          <h2 className="text-base font-semibold text-gray-900">Lessons learned</h2>
-          <p className="mt-3 text-sm text-gray-700">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Lessons learned</h2>
+          <p className="mt-3 text-sm text-gray-700 dark:text-gray-300">
             {experiment.lessonLearned?.trim() || "N.D."}
           </p>
         </div>

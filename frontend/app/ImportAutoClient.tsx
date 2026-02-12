@@ -69,34 +69,34 @@ export default function ImportAutoClient() {
   return (
     <div className="mx-auto w-full max-w-2xl">
       {isRunning ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-50/90 px-6 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-            <h2 className="text-lg font-semibold text-gray-900">Syncing experiments…</h2>
-            <p className="mt-2 text-sm text-gray-600">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-50/90 dark:bg-gray-900/90 px-6 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Syncing experiments…</h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Importing the latest data from Google Sheets / Drive into Postgres.
             </p>
 
             <div className="mt-6">
-              <div className="h-2 w-full rounded-full bg-gray-100">
+              <div className="h-2 w-full rounded-full bg-gray-100 dark:bg-gray-700">
                 <div
                   className="h-2 rounded-full bg-brand-500 transition-[width]"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <div className="mt-2 text-xs text-gray-500">{progress}%</div>
+              <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">{progress}%</div>
             </div>
           </div>
         </div>
       ) : null}
 
       {status === "done" ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {ok ? "Experiments updated" : "Import failed"}
               </h2>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 {ok
                   ? "Your database is up to date. Continue to stats for the last completed month."
                   : "Check your Google permissions and try again."}
@@ -105,7 +105,7 @@ export default function ImportAutoClient() {
             <button
               type="button"
               onClick={run}
-              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Run again
             </button>
@@ -120,7 +120,7 @@ export default function ImportAutoClient() {
             </Link>
             <Link
               href="/experiments"
-              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               View experiments
             </Link>
@@ -128,10 +128,10 @@ export default function ImportAutoClient() {
 
           {result ? (
             <details className="mt-6">
-              <summary className="cursor-pointer text-sm font-medium text-gray-700">
+              <summary className="cursor-pointer text-sm font-medium text-gray-700 dark:text-gray-300">
                 Import details
               </summary>
-              <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-gray-50 p-4 text-xs text-gray-800">
+              <pre className="mt-3 whitespace-pre-wrap rounded-lg bg-gray-50 dark:bg-gray-900/50 p-4 text-xs text-gray-800 dark:text-gray-200">
                 {JSON.stringify(result, null, 2)}
               </pre>
             </details>

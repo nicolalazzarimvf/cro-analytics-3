@@ -161,8 +161,8 @@ function computeBreakdowns(rows: Record<string, any>[]) {
 const mdComponents: Components = {
   // H2 → subtle section dividers (Executive Summary, Key Highlights, etc.)
   h2: ({ children }) => (
-    <div className="not-prose mt-0 mb-3 border-t border-gray-100 first:border-t-0">
-      <span className="inline-block mt-4 mb-1 px-1 text-[10px] font-extrabold tracking-widest uppercase text-slate-400">
+    <div className="not-prose mt-0 mb-3 border-t border-gray-100 dark:border-gray-700 first:border-t-0">
+      <span className="inline-block mt-4 mb-1 px-1 text-[10px] font-extrabold tracking-widest uppercase text-slate-400 dark:text-slate-500">
         {children}
       </span>
     </div>
@@ -170,39 +170,39 @@ const mdComponents: Components = {
 
   // H3 → learning/theme cards with left accent
   h3: ({ children }) => (
-    <h3 className="not-prose mt-4 mb-2 rounded-md bg-slate-50 border-l-[3px] border-blue-500 px-3 py-2 text-sm font-semibold text-slate-800">
+    <h3 className="not-prose mt-4 mb-2 rounded-md bg-slate-50 dark:bg-slate-800/50 border-l-[3px] border-blue-500 px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
       {children}
     </h3>
   ),
 
   // Strong at the start of a paragraph → muted label style
   strong: ({ children }) => (
-    <strong className="font-bold text-slate-900">{children}</strong>
+    <strong className="font-bold text-slate-900 dark:text-slate-200">{children}</strong>
   ),
 
   // Tables (from remark-gfm) → nice bordered table
   table: ({ children }) => (
     <div className="overflow-x-auto my-3">
-      <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+      <table className="min-w-full text-sm border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
         {children}
       </table>
     </div>
   ),
   thead: ({ children }) => (
-    <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
+    <thead className="bg-slate-50 dark:bg-gray-700 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">
       {children}
     </thead>
   ),
   th: ({ children }) => (
-    <th className="px-3 py-2 border-b border-gray-200">{children}</th>
+    <th className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">{children}</th>
   ),
   td: ({ children }) => (
-    <td className="px-3 py-2 border-b border-gray-100">{children}</td>
+    <td className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">{children}</td>
   ),
 
   // Blockquotes → call-out style
   blockquote: ({ children }) => (
-    <blockquote className="not-prose my-3 rounded-r-md border-l-[3px] border-blue-300 bg-blue-50/50 px-4 py-3 text-sm text-blue-900 italic">
+    <blockquote className="not-prose my-3 rounded-r-md border-l-[3px] border-blue-300 bg-blue-50/50 dark:bg-blue-900/20 px-4 py-3 text-sm text-blue-900 dark:text-blue-200 italic">
       {children}
     </blockquote>
   ),
@@ -319,13 +319,13 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
     };
 
     return (
-      <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mt-6 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-sm dark:shadow-none">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-gray-900">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
             Experiments — {activeLabel} ({rows.length})
           </h2>
           {totalPages > 1 ? (
-            <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <span>
                 Page {currentPage} of {totalPages}
               </span>
@@ -333,7 +333,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                 type="button"
                 disabled={currentPage <= 1}
                 onClick={() => setTablePage((p) => Math.max(1, p - 1))}
-                className="rounded border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded border border-gray-200 dark:border-gray-700/60 px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
               >
                 Prev
               </button>
@@ -341,7 +341,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                 type="button"
                 disabled={currentPage >= totalPages}
                 onClick={() => setTablePage((p) => Math.min(totalPages, p + 1))}
-                className="rounded border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                className="rounded border border-gray-200 dark:border-gray-700/60 px-2 py-1 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
               >
                 Next
               </button>
@@ -352,7 +352,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
         <div className="mt-4 overflow-x-auto">
           <table className="min-w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-600">
+              <tr className="border-b border-gray-200 dark:border-gray-700/60 text-left text-gray-600 dark:text-gray-400">
                 <th className="px-3 py-2 font-medium">Experiment</th>
                 <th className="px-3 py-2 font-medium">Test name</th>
                 <th className="px-3 py-2 font-medium">Vertical</th>
@@ -368,9 +368,9 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                 return (
                   <tr
                     key={uuid ?? `row-${start + idx}`}
-                    className="border-b border-gray-100 text-gray-700"
+                    className="border-b border-gray-100 dark:border-gray-700 text-gray-700 dark:text-gray-300"
                   >
-                    <td className="px-3 py-2 font-medium text-gray-900">
+                    <td className="px-3 py-2 font-medium text-gray-900 dark:text-gray-100">
                       {uuid ? (
                         <button
                           type="button"
@@ -402,7 +402,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
               })}
               {!pageRows.length ? (
                 <tr>
-                  <td className="px-3 py-3 text-gray-500" colSpan={7}>
+                  <td className="px-3 py-3 text-gray-500 dark:text-gray-400" colSpan={7}>
                     No experiment rows found.
                   </td>
                 </tr>
@@ -417,11 +417,11 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
   return (
     <section className="space-y-0">
       {/* ── Ask form ── */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-sm dark:shadow-none">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-gray-900">Ask the data</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Ask the data</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Ask anything about experiments; we&apos;ll query the database and summarise.
             </p>
           </div>
@@ -431,7 +431,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="e.g., What did we test on Merchant Accounts UK in the past 6 months?"
-            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm shadow-inner focus:border-blue-500 focus:outline-none"
+            className="w-full rounded-xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-inner focus:border-blue-500 focus:outline-none placeholder:text-gray-500 dark:placeholder:text-gray-400"
             rows={3}
           />
           <button
@@ -443,15 +443,15 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
           </button>
         </form>
         {error ? (
-          <div className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
+          <div className="mt-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</div>
         ) : null}
       </div>
 
       {/* ── Empty state (only when no default data and no result) ── */}
       {!result && !loading && !error && !defaultRows?.length ? (
         <div className="mt-8 flex flex-col items-center justify-center py-16 text-center">
-          <div className="text-4xl text-gray-300">?</div>
-          <p className="mt-3 text-sm text-gray-500 max-w-md">
+          <div className="text-4xl text-gray-300 dark:text-gray-600">?</div>
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400 max-w-md">
             Ask a question above to explore experiment data. The results will appear here with
             breakdowns by vertical, geo, winners, and a full experiment table.
           </p>
@@ -460,7 +460,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
 
       {/* ── Default data header ── */}
       {!result && defaultRows?.length ? (
-        <div className="mt-6 rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+        <div className="mt-6 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 px-4 py-3 text-sm text-blue-800 dark:text-blue-200">
           Showing <span className="font-semibold">{defaultLabel}</span> recap ({defaultRows.length} experiments).
           Ask a question above to explore specific data.
         </div>
@@ -468,15 +468,15 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
 
       {/* ── AI answer ── */}
       {result?.answer ? (
-        <div className="mt-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm prose prose-sm prose-slate max-w-none
-          prose-headings:text-slate-800
+        <div className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-5 py-5 shadow-sm dark:shadow-none prose prose-sm prose-slate dark:prose-invert max-w-none
+          prose-headings:text-slate-800 dark:prose-headings:text-slate-200
           prose-h4:text-sm prose-h4:font-semibold prose-h4:mt-3 prose-h4:mb-1
-          prose-p:text-slate-600 prose-p:leading-relaxed prose-p:my-1.5
-          prose-li:text-slate-600 prose-li:my-0.5
-          prose-strong:text-slate-900
-          prose-em:text-slate-500
-          prose-code:text-slate-700 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
-          prose-hr:my-3 prose-hr:border-gray-100
+          prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-p:my-1.5
+          prose-li:text-slate-600 dark:prose-li:text-slate-300 prose-li:my-0.5
+          prose-strong:text-slate-900 dark:prose-strong:text-slate-100
+          prose-em:text-slate-500 dark:prose-em:text-slate-400
+          prose-code:text-slate-700 dark:prose-code:text-slate-300 prose-code:bg-slate-100 dark:prose-code:bg-slate-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
+          prose-hr:my-3 prose-hr:border-gray-100 dark:prose-hr:border-gray-700
           prose-ul:my-2 prose-ol:my-2
           prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
         >
@@ -488,23 +488,23 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
 
       {/* ── Analysis stats bar ── */}
       {result ? (
-        <div className="mt-2 flex flex-wrap items-center gap-3 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-[11px] text-gray-500">
-          <span className="font-semibold text-gray-700">Analysis scope:</span>
+        <div className="mt-2 flex flex-wrap items-center gap-3 rounded-lg bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/60 px-3 py-2 text-[11px] text-gray-500 dark:text-gray-400">
+          <span className="font-semibold text-gray-700 dark:text-gray-300">Analysis scope:</span>
           <span>{result.rowCount} SQL rows</span>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
           <span>{result.graphRowCount} graph patterns</span>
-          <span className="text-gray-300">|</span>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
           <span>{result.graphExperiments.length} experiments for graph</span>
           {result.sqlError ? (
             <>
-              <span className="text-gray-300">|</span>
-              <span className="text-red-500">SQL error</span>
+              <span className="text-gray-300 dark:text-gray-600">|</span>
+              <span className="text-red-500 dark:text-red-400">SQL error</span>
             </>
           ) : null}
           {result.graphError ? (
             <>
-              <span className="text-gray-300">|</span>
-              <span className="text-red-500">Graph error</span>
+              <span className="text-gray-300 dark:text-gray-600">|</span>
+              <span className="text-red-500 dark:text-red-400">Graph error</span>
             </>
           ) : null}
         </div>
@@ -513,37 +513,37 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
       {/* ── Summary cards ── */}
       {breakdowns ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="text-sm font-medium text-gray-600">Experiments analysed</div>
-            <div className="mt-2 text-3xl font-semibold text-gray-900">{breakdowns.total}</div>
-            <div className="mt-1 text-xs text-gray-500">matching your query</div>
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Experiments analysed</div>
+            <div className="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">{breakdowns.total}</div>
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">matching your query</div>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="text-sm font-medium text-gray-600">With winners</div>
-            <div className="mt-2 text-3xl font-semibold text-gray-900">{breakdowns.withWinners}</div>
-            <div className="mt-1 text-xs text-gray-500">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">With winners</div>
+            <div className="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">{breakdowns.withWinners}</div>
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {breakdowns.total > 0
                 ? `${Math.round((breakdowns.withWinners / breakdowns.total) * 100)}% win rate`
                 : "—"}
             </div>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="text-sm font-medium text-gray-600">Verticals</div>
-            <div className="mt-2 text-3xl font-semibold text-gray-900">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Verticals</div>
+            <div className="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">
               {breakdowns.uniqueVerticals}
             </div>
-            <div className="mt-1 text-xs text-gray-500">unique verticals</div>
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">unique verticals</div>
           </div>
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <div className="text-sm font-medium text-gray-600">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
               {breakdowns.totalExtrap > 0 ? "Total monthly extrap" : "Geos"}
             </div>
-            <div className="mt-2 text-3xl font-semibold text-gray-900">
+            <div className="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">
               {breakdowns.totalExtrap > 0
                 ? formatMoney(breakdowns.totalExtrap)
                 : breakdowns.uniqueGeos}
             </div>
-            <div className="mt-1 text-xs text-gray-500">
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {breakdowns.totalExtrap > 0 ? "sum across winners" : "unique geos"}
             </div>
           </div>
@@ -554,65 +554,65 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
       {breakdowns ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {/* Vertical */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">Vertical breakdown</h3>
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Vertical breakdown</h3>
             <div className="mt-3 grid gap-1.5 text-sm">
               {breakdowns.verticals.slice(0, 10).map(([k, v]) => (
                 <div
                   key={k}
-                  className="flex items-center justify-between gap-4 border-b border-gray-100 pb-1.5 last:border-b-0"
+                  className="flex items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-700 pb-1.5 last:border-b-0"
                 >
-                  <span className="text-gray-700">{k}</span>
-                  <span className="font-medium text-gray-900">{v}</span>
+                  <span className="text-gray-700 dark:text-gray-300">{k}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{v}</span>
                 </div>
               ))}
               {!breakdowns.verticals.length ? (
-                <div className="text-gray-500 text-xs">No vertical data.</div>
+                <div className="text-gray-500 dark:text-gray-400 text-xs">No vertical data.</div>
               ) : null}
             </div>
           </div>
 
           {/* Geo */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">Geo breakdown</h3>
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Geo breakdown</h3>
             <div className="mt-3 grid gap-1.5 text-sm">
               {breakdowns.geos.slice(0, 10).map(([k, v]) => (
                 <div
                   key={k}
-                  className="flex items-center justify-between gap-4 border-b border-gray-100 pb-1.5 last:border-b-0"
+                  className="flex items-center justify-between gap-4 border-b border-gray-100 dark:border-gray-700 pb-1.5 last:border-b-0"
                 >
-                  <span className="text-gray-700">{k}</span>
-                  <span className="font-medium text-gray-900">{v}</span>
+                  <span className="text-gray-700 dark:text-gray-300">{k}</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{v}</span>
                 </div>
               ))}
               {!breakdowns.geos.length ? (
-                <div className="text-gray-500 text-xs">No geo data.</div>
+                <div className="text-gray-500 dark:text-gray-400 text-xs">No geo data.</div>
               ) : null}
             </div>
           </div>
 
           {/* Winners */}
-          <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">Top winners</h3>
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top winners</h3>
             <div className="mt-3 grid gap-2 text-sm">
               {breakdowns.winners.slice(0, 8).map((w) => (
                 <div
                   key={w.name}
-                  className="flex items-start justify-between gap-4 border-b border-gray-100 pb-1.5 last:border-b-0"
+                  className="flex items-start justify-between gap-4 border-b border-gray-100 dark:border-gray-700 pb-1.5 last:border-b-0"
                 >
                   <div>
-                    <div className="font-medium text-gray-900">{w.name}</div>
-                    <div className="text-xs text-gray-500">{w.count} experiment{w.count !== 1 ? "s" : ""}</div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{w.name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{w.count} experiment{w.count !== 1 ? "s" : ""}</div>
                   </div>
                   {w.extrap > 0 ? (
-                    <div className="font-semibold text-gray-900 text-right">
+                    <div className="font-semibold text-gray-900 dark:text-gray-100 text-right">
                       {formatMoney(w.extrap)}
                     </div>
                   ) : null}
                 </div>
               ))}
               {!breakdowns.winners.length ? (
-                <div className="text-gray-500 text-xs">No winners found.</div>
+                <div className="text-gray-500 dark:text-gray-400 text-xs">No winners found.</div>
               ) : null}
             </div>
           </div>
@@ -637,21 +637,21 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
           <>
             {/* Graph pattern visualization */}
             {graphData ? (
-              <div className="mt-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="mt-6 rounded-xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-4 shadow-sm dark:shadow-none space-y-3">
                 <div>
-                  <div className="text-sm font-semibold text-gray-900">Experiment graph</div>
-                  <p className="text-xs text-gray-500">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">Experiment graph</div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     Click a <span className="font-semibold text-blue-600">change type</span> or{" "}
                     <span className="font-semibold text-emerald-600">element</span> node to see
                     related experiments below.
                   </p>
                 </div>
-                <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 bg-white">
+                <div className="h-[420px] w-full overflow-hidden rounded-lg border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
                   <ForceGraph3D
                     graphData={{ nodes: graphData.nodes, links: graphData.links }}
                     width={800}
                     height={400}
-                    backgroundColor="#ffffff"
+                    backgroundColor="transparent"
                     nodeColor={(node: any) => {
                       if (node.type === "change")
                         return expandedAttrs.has(node.id) ? "#1d4ed8" : "#3b82f6";
@@ -691,7 +691,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                     <div className="space-y-2">
                       {changeNodes.length > 0 ? (
                         <div>
-                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Change types</div>
+                          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Change types</div>
                           <div className="flex flex-wrap gap-1.5">
                             {changeNodes.map((n) => {
                               const cnt = graphData.patternCounts.get(n.id) ?? 0;
@@ -704,11 +704,11 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                                   className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                                     selected
                                       ? "bg-blue-600 text-white shadow-sm"
-                                      : "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+                                      : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50"
                                   }`}
                                 >
                                   {n.label}
-                                  <span className={`text-[10px] ${selected ? "text-blue-200" : "text-blue-400"}`}>
+                                  <span className={`text-[10px] ${selected ? "text-blue-200" : "text-blue-400 dark:text-blue-400"}`}>
                                     {cnt}
                                   </span>
                                 </button>
@@ -719,7 +719,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                       ) : null}
                       {elementNodes.length > 0 ? (
                         <div>
-                          <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Elements</div>
+                          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Elements</div>
                           <div className="flex flex-wrap gap-1.5">
                             {elementNodes.map((n) => {
                               const cnt = graphData.patternCounts.get(n.id) ?? 0;
@@ -732,11 +732,11 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                                   className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                                     selected
                                       ? "bg-emerald-600 text-white shadow-sm"
-                                      : "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                                      : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
                                   }`}
                                 >
                                   {n.label}
-                                  <span className={`text-[10px] ${selected ? "text-emerald-200" : "text-emerald-400"}`}>
+                                  <span className={`text-[10px] ${selected ? "text-emerald-200" : "text-emerald-400 dark:text-emerald-400"}`}>
                                     {cnt}
                                   </span>
                                 </button>
@@ -749,7 +749,7 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                         <button
                           type="button"
                           onClick={() => setExpandedAttrs(new Set())}
-                          className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+                          className="inline-flex items-center gap-1 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-2.5 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                         >
                           Clear all selections
                         </button>
@@ -760,8 +760,8 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
 
                 {/* Experiments panel — appears below the graph when a node is selected */}
                 {uniqueExps.length > 0 ? (
-                  <div className="border-t border-gray-200 pt-3 space-y-2">
-                    <div className="text-xs font-semibold text-gray-700">
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3 space-y-2">
+                    <div className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                       {uniqueExps.length} related experiment
                       {uniqueExps.length !== 1 ? "s" : ""}
                     </div>
@@ -770,33 +770,33 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                         <button
                           key={exp.id ?? exp.experimentId}
                           type="button"
-                          className="w-full text-left rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                          className="w-full text-left rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
                           onClick={() => exp.id && setModalId(exp.id)}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate">
+                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                 {exp.testName ?? exp.experimentId}
                               </div>
                               <div className="flex flex-wrap gap-1.5 mt-1">
                                 {exp.changeType ? (
-                                  <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                                  <span className="inline-flex items-center gap-1 rounded bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
                                     {exp.changeType}
                                   </span>
                                 ) : null}
                                 {exp.elementChanged ? (
-                                  <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700">
+                                  <span className="inline-flex items-center gap-1 rounded bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
                                     {exp.elementChanged}
                                   </span>
                                 ) : null}
                               </div>
                             </div>
                             {exp.winningVar ? (
-                              <span className="shrink-0 inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-semibold text-green-700 border border-green-200">
+                              <span className="shrink-0 inline-flex items-center rounded-full bg-green-50 dark:bg-green-900/30 px-2 py-0.5 text-[10px] font-semibold text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800">
                                 Winner: {exp.winningVar}
                               </span>
                             ) : (
-                              <span className="shrink-0 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 border border-gray-200">
+                              <span className="shrink-0 inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-[10px] font-medium text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-600">
                                 No winner
                               </span>
                             )}
@@ -806,8 +806,8 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
                     </div>
                   </div>
                 ) : expandedAttrs.size > 0 ? (
-                  <div className="border-t border-gray-200 pt-3">
-                    <p className="text-xs text-gray-400 italic">
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 italic">
                       No experiments found for this selection.
                     </p>
                   </div>
@@ -816,26 +816,26 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
             ) : null}
 
             {/* Collapsible source data */}
-            <details className="mt-4 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
-              <summary className="cursor-pointer text-sm font-semibold text-gray-900">
+            <details className="mt-4 rounded-xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-3 shadow-sm dark:shadow-none">
+              <summary className="cursor-pointer text-sm font-semibold text-gray-900 dark:text-gray-100">
                 Show source data
               </summary>
               <div className="mt-3 space-y-4">
                 {result.sql ? (
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 shadow-sm space-y-3">
-                    <div className="flex items-center justify-between text-sm font-semibold text-gray-900">
+                  <div className="rounded-xl border border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/50 p-3 shadow-sm dark:shadow-none space-y-3">
+                    <div className="flex items-center justify-between text-sm font-semibold text-gray-900 dark:text-gray-100">
                       <span>SQL query</span>
                       {result.sqlError ? (
-                        <span className="text-xs text-red-600">{result.sqlError}</span>
+                        <span className="text-xs text-red-600 dark:text-red-400">{result.sqlError}</span>
                       ) : null}
                     </div>
                     {result.notes ? (
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-600 dark:text-gray-400">
                         Notes:{" "}
-                        <span className="font-medium text-gray-800">{result.notes}</span>
+                        <span className="font-medium text-gray-800 dark:text-gray-200">{result.notes}</span>
                       </div>
                     ) : null}
-                    <pre className="whitespace-pre-wrap text-xs text-gray-700 bg-white rounded-lg border border-gray-200 p-3">
+                    <pre className="whitespace-pre-wrap text-xs text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-3">
                       {result.sql}
                     </pre>
                   </div>
@@ -852,11 +852,11 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
       {/* ── Experiment detail modal ── */}
       {modalId ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4">
-          <div className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-2xl bg-white shadow-xl">
+          <div className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-xl">
             <button
               type="button"
               onClick={() => setModalId(null)}
-              className="absolute right-3 top-3 z-10 rounded-full bg-white/80 px-2 py-1 text-sm font-semibold text-gray-700 shadow hover:bg-white"
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/80 dark:bg-gray-700/80 px-2 py-1 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow hover:bg-white dark:hover:bg-gray-700"
             >
               x
             </button>

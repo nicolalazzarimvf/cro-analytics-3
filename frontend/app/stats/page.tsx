@@ -50,8 +50,8 @@ export default async function StatsPage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-gray-900">Stats</h1>
-        <p className="text-sm text-gray-600">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Stats</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Ask a question to explore experiment data, or browse the{" "}
           <span className="font-medium">{monthLabel}</span> recap below.
         </p>

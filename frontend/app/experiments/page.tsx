@@ -74,36 +74,36 @@ export default async function ExperimentsPage({
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-gray-600">Browse</p>
-          <h1 className="text-2xl font-semibold text-gray-900">Experiments</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">Browse</p>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">Experiments</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             Page {page} of {totalPages} — showing {items.length} of {total} rows
           </p>
         </div>
-        <form className="flex flex-wrap items-center gap-2 text-sm text-gray-600" action="/experiments" method="get">
+        <form className="flex flex-wrap items-center gap-2 text-sm text-gray-600 dark:text-gray-400" action="/experiments" method="get">
           <input
             type="search"
             name="q"
             defaultValue={query}
             placeholder="Search by ID, test name, geo, vertical, winner..."
-            className="w-64 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            className="w-64 rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 shadow-theme-xs placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100"
           />
           <input type="hidden" name="pageSize" value={pageSize} />
           <button
             type="submit"
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50"
+            className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-3 py-2 font-medium text-gray-700 dark:text-gray-300 shadow-theme-xs hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             Search
           </button>
           {query ? (
             <Link
               href="/experiments"
-              className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 font-medium text-gray-500 shadow-theme-xs hover:bg-gray-100"
+              className="rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 font-medium text-gray-500 dark:text-gray-400 shadow-theme-xs hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               Clear
             </Link>
           ) : null}
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700">
+          <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-3 py-1 font-medium text-gray-700 dark:text-gray-300">
             Page size: {pageSize}
           </span>
           <div className="flex items-center gap-2">
@@ -112,8 +112,8 @@ export default async function ExperimentsPage({
               aria-disabled={!hasPrev}
               className={`rounded-lg border px-3 py-1.5 font-medium transition ${
                 hasPrev
-                  ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                  : "border-gray-100 bg-gray-50 text-gray-400 pointer-events-none"
+                  ? "border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  : "border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-400 dark:text-gray-500 pointer-events-none"
               }`}
             >
               ← Prev
@@ -123,8 +123,8 @@ export default async function ExperimentsPage({
               aria-disabled={!hasNext}
               className={`rounded-lg border px-3 py-1.5 font-medium transition ${
                 hasNext
-                  ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
-                  : "border-gray-100 bg-gray-50 text-gray-400 pointer-events-none"
+                  ? "border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  : "border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-400 dark:text-gray-500 pointer-events-none"
               }`}
             >
               Next →
@@ -133,38 +133,38 @@ export default async function ExperimentsPage({
         </form>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-theme-sm">
+      <div className="mt-6 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 shadow-theme-sm dark:shadow-none">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-900/50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   Experiment ID
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   Test name
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   Vertical
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   Geo
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   Launched
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   Concluded
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600">
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-400">
                   Winner
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 text-sm text-gray-900">
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-700 text-sm text-gray-900 dark:text-gray-100">
               {items.length ? (
                 items.map((row: ExperimentRow) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
+                  <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <td className="px-4 py-3 font-semibold text-brand-700">
                       <Link href={`/experiments/${row.id}?from=experiments`} className="hover:underline">
                         {row.experimentId || "—"}
@@ -173,15 +173,15 @@ export default async function ExperimentsPage({
                     <td className="px-4 py-3">
                       <Link
                         href={`/experiments/${row.id}?from=experiments`}
-                        className="font-medium text-gray-900 hover:underline"
+                        className="font-medium text-gray-900 dark:text-gray-100 hover:underline"
                       >
                         {row.testName || "Untitled test"}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{row.vertical ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-700">{row.geo ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-700">{formatDate(row.dateLaunched)}</td>
-                    <td className="px-4 py-3 text-gray-700">{formatDate(row.dateConcluded)}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{row.vertical ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{row.geo ?? "—"}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(row.dateLaunched)}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(row.dateConcluded)}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700">
                         {row.winningVar?.trim() || "N.D."}
@@ -191,7 +191,7 @@ export default async function ExperimentsPage({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-600">
+                  <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-600 dark:text-gray-400">
                     No experiments found.
                   </td>
                 </tr>

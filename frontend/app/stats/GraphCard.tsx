@@ -60,18 +60,18 @@ export default function GraphCard({
   ) ?? [];
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-sm dark:shadow-none">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-          <p className="text-sm text-gray-600">
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             {subtitle ?? "Change type → element relationships"}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-600">
-        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1">
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+        <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700/60 px-3 py-1">
           <span className="block h-3 w-3 rounded-sm bg-orange-500" aria-hidden />
           <span>{context === "experiment" ? "This experiment" : "Top winner"}</span>
         </div>
@@ -94,18 +94,18 @@ export default function GraphCard({
       </div>
 
       {!hasData ? (
-        <div className="mt-4 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-600">
+        <div className="mt-4 rounded-lg border border-dashed border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-4 py-6 text-sm text-gray-600 dark:text-gray-400">
           {error ? `Could not load graph: ${error}` : "No graph data available."}
         </div>
       ) : (
         <>
-          <div className="relative mt-4 h-[440px] w-full overflow-hidden rounded-xl border border-gray-100 bg-white">
+          <div className="relative mt-4 h-[440px] w-full overflow-hidden rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
             <ForceGraph3D
               ref={graphRef}
               graphData={data}
               width={800}
               height={420}
-              backgroundColor="#ffffff"
+              backgroundColor="transparent"
               controlType="orbit"
               enableNavigationControls
               showNavInfo={false}
@@ -162,20 +162,20 @@ export default function GraphCard({
           {/* Attributes */}
           {attributeNodes.length > 0 ? (
             <div className="mt-4 space-y-2">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Attributes
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {attributeNodes.map((n) => {
                   const colorMap: Record<string, string> = {
-                    change: "bg-blue-50 text-blue-700 border-blue-200",
-                    element: "bg-emerald-50 text-emerald-700 border-emerald-200",
-                    vertical: "bg-purple-50 text-purple-700 border-purple-200",
-                    geo: "bg-purple-50 text-purple-700 border-purple-200",
-                    brand: "bg-purple-50 text-purple-700 border-purple-200",
-                    metric: "bg-purple-50 text-purple-700 border-purple-200",
+                    change: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+                    element: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+                    vertical: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+                    geo: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+                    brand: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+                    metric: "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800",
                   };
-                  const cls = colorMap[n.type] ?? "bg-gray-50 text-gray-700 border-gray-200";
+                  const cls = colorMap[n.type] ?? "bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600";
                   return (
                     <span
                       key={n.id}
@@ -193,7 +193,7 @@ export default function GraphCard({
           {/* Similar experiments list */}
           {experimentNodes.length > 0 ? (
             <div className="mt-4 space-y-2">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                 Similar experiments ({experimentNodes.length})
               </div>
               <div className="grid gap-1.5 sm:grid-cols-2">
@@ -201,12 +201,12 @@ export default function GraphCard({
                   <Link
                     key={n.id}
                     href={n.href!}
-                    className="flex items-start justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 hover:bg-blue-50 hover:border-blue-200 transition-colors"
+                    className="flex items-start justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
                   >
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-blue-700 truncate">{n.label}</div>
+                      <div className="text-sm font-medium text-blue-700 dark:text-blue-300 truncate">{n.label}</div>
                       {n.title ? (
-                        <div className="text-xs text-gray-500 truncate mt-0.5">{n.title}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{n.title}</div>
                       ) : null}
                     </div>
                   </Link>

@@ -7,25 +7,25 @@ export default function HowItWorksPage() {
     <main className="mx-auto mt-10 flex max-w-5xl flex-col gap-6 px-6 pb-16">
       <header className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-wide text-brand-600">How it works</p>
-        <h1 className="text-3xl font-bold text-gray-900">Inside MVF CRO Analyst</h1>
-        <p className="text-base text-gray-700">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Inside MVF CRO Analyst</h1>
+        <p className="text-base text-gray-700 dark:text-gray-300">
           Your single place to see what we tested, what won, and how similar ideas connect. CRO Analyst ingests
           our live experiment data, keeps it fresh automatically, and gives you quick answers and visual context.
         </p>
       </header>
 
-      <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">What you can do</h2>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
+      <section className="space-y-3 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">What you can do</h2>
+        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 dark:text-gray-300">
           <li>Browse stats for the latest month: top winners, vertical/geo breakdowns, and a 3D graph of patterns.</li>
           <li>Drill into any experiment: who launched it, what changed, screenshots, results, and similar experiments.</li>
           <li>Ask natural-language questions: pull tables or graph insights without writing SQL/Cypher.</li>
         </ul>
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">How data stays fresh</h2>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
+      <section className="space-y-3 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">How data stays fresh</h2>
+        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 dark:text-gray-300">
           <li>
             Live Google Sheet → CRO Analyst: the sheet is imported automatically on a schedule and can be refreshed
             manually from the app.
@@ -43,9 +43,9 @@ export default function HowItWorksPage() {
         </ul>
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">UI behaviors</h2>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
+      <section className="space-y-3 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">UI behaviors</h2>
+        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 dark:text-gray-300">
           <li>
             <strong>Stats:</strong> Shows last completed month (or most recent data), top winners, geo/vertical breakdowns,
             and a 3D relationship graph. Pagination controls appear above and below the experiments table.
@@ -66,18 +66,18 @@ export default function HowItWorksPage() {
         </ul>
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">How Ask AI works</h2>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
+      <section className="space-y-3 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">How Ask AI works</h2>
+        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 dark:text-gray-300">
           <li>For data questions, we generate SQL, sanitize it (read-only, quoted, limited), and run it on Postgres.</li>
           <li>For relationship/pattern questions, we aggregate data from Postgres (change type → element, etc.) and visualise them.</li>
           <li>We show the SQL used so you can trust and reuse the query.</li>
         </ul>
       </section>
 
-      <section className="space-y-3 rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h2 className="text-xl font-semibold text-gray-900">Technical details (for admins)</h2>
-        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700">
+      <section className="space-y-3 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Technical details (for admins)</h2>
+        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-700 dark:text-gray-300">
           <li>
             <strong>Imports:</strong> <code>/api/import/sheets</code> (user session) and <code>/api/import/auto</code> (service account + cron).
             Optional <code>IMPORT_LIMIT</code> or <code>?limit=</code> caps rows; range A:ZZ, gid configurable.
@@ -99,16 +99,16 @@ export default function HowItWorksPage() {
         </ul>
       </section>
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
+      <section className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
           <Link href="/stats" className="text-brand-700 hover:underline">
             View stats
           </Link>
-          <span className="text-gray-400">•</span>
+          <span className="text-gray-400 dark:text-gray-500">•</span>
           <Link href="/experiments" className="text-brand-700 hover:underline">
             Browse experiments
           </Link>
-          <span className="text-gray-400">•</span>
+          <span className="text-gray-400 dark:text-gray-500">•</span>
           <Link href="/admin/import" className="text-brand-700 hover:underline">
             Import data
           </Link>

@@ -17,20 +17,20 @@ export default async function LoginPage({
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-xl items-center justify-center px-6 py-10">
-      <div className="w-full rounded-2xl border border-gray-200 bg-white p-6 shadow-theme-sm">
-        <h1 className="text-xl font-semibold text-gray-900">Login</h1>
-        <p className="mt-2 text-sm text-gray-600">
+      <div className="w-full rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-theme-sm dark:shadow-none">
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Login</h1>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           Sign in to sync data and access the dashboard.
         </p>
       {missingNextAuthSecret || missingGoogleConfig ? (
-        <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
+        <div className="mt-4 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4 text-sm text-orange-900 dark:text-orange-200">
           OAuth is not fully configured. Check <code>frontend/.env.local</code> for{" "}
           <code>NEXTAUTH_SECRET</code>, <code>GOOGLE_CLIENT_ID</code>,{" "}
           <code>GOOGLE_CLIENT_SECRET</code>.
         </div>
       ) : null}
       {error ? (
-        <div className="mt-4 rounded-lg border border-error-200 bg-error-50 p-4 text-sm text-error-800">
+        <div className="mt-4 rounded-lg border border-error-200 dark:border-red-800 bg-error-50 dark:bg-red-900/20 p-4 text-sm text-error-800 dark:text-red-200">
           Sign-in failed (<code>{error}</code>). For Google OAuth, verify:
           <ul className="mt-2 list-disc pl-5">
             <li>

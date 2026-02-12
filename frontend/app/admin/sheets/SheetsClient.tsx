@@ -34,24 +34,34 @@ export default function SheetsClient() {
   }
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", gap: 12 }}>
-        <button type="button" onClick={runPreview} disabled={isBusy}>
+    <div className="mt-6 grid gap-4">
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={runPreview}
+          disabled={isBusy}
+          className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+        >
           Preview sheet
         </button>
-        <button type="button" onClick={runImport} disabled={isBusy}>
+        <button
+          type="button"
+          onClick={runImport}
+          disabled={isBusy}
+          className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+        >
           Import (upsert) from sheet
         </button>
       </div>
 
       {preview ? (
-        <pre style={{ whiteSpace: "pre-wrap", padding: 12, background: "#f8fafc" }}>
+        <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/50 p-4 text-xs text-gray-800 dark:text-gray-200">
           {JSON.stringify(preview, null, 2)}
         </pre>
       ) : null}
 
       {importResult ? (
-        <pre style={{ whiteSpace: "pre-wrap", padding: 12, background: "#f8fafc" }}>
+        <pre className="whitespace-pre-wrap rounded-lg border border-gray-200 dark:border-gray-700/60 bg-gray-50 dark:bg-gray-900/50 p-4 text-xs text-gray-800 dark:text-gray-200">
           {importResult}
         </pre>
       ) : null}

@@ -1,42 +1,47 @@
 import "./globals.css";
 import type { ReactNode } from "react";
-import Header from "@/app/components/Header";
+import { getServerAuthSession } from "@/lib/auth/server";
+import AppShell from "@/app/components/AppShell";
 
 export const metadata = {
   title: "CRO Analyst",
   description: "CRO Analyst v3",
   icons: {
-    icon: "/images/analytics-logo.png"
-  }
+    icon: "/images/analytics-logo.png",
+  },
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const session = await getServerAuthSession();
+
   return (
-    <html lang="en">
-      <body>
-        <Header />
-        {children}
-        <footer className="mt-12 border-t border-gray-200 bg-white px-6 py-6 text-sm text-gray-600">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-            <span>Copyright 2025 MVF Global</span>
-            <span className="flex flex-wrap items-center gap-2 text-sm">
-              For more info contact Nicola Lazzari or Stefanie Evans on Slack |
-              <a
-                href="slack://user?email=nicola.lazzari@mvfglobal.com"
-                className="text-brand-700 hover:underline"
-              >
-                DM Nicola
-              </a>
-              /
-              <a
-                href="slack://user?email=stefanie.evans@mvfglobal.com"
-                className="text-brand-700 hover:underline"
-              >
-                DM Stefanie
-              </a>
-            </span>
-          </div>
-        </footer>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Prevent dark-mode flash: set .dark before React hydrates */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                var t = localStorage.getItem('theme');
+                if (t !== 'light') {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.style.colorScheme = 'dark';
+                } else {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.style.colorScheme = 'light';
+                }
+                if (localStorage.getItem('sidebar-expanded') === 'true') {
+                  document.body && document.body.classList.add('sidebar-expanded');
+                }
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="font-inter antialiased bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400">
+        <AppShell userEmail={session?.user?.email}>
+          {children}
+        </AppShell>
       </body>
     </html>
   );
