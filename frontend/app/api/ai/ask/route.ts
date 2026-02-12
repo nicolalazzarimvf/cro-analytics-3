@@ -123,12 +123,47 @@ function normalizeDateSub(sql: string) {
   );
 }
 
+/**
+ * Ensure essential columns are present in the SELECT so the graph can link
+ * experiments to their changeType and elementChanged attributes.
+ */
+function ensureGraphColumns(sql: string) {
+  // Only inject into simple SELECTs from the Experiment table (not sub-selects or GROUP BY aggregations)
+  const isSimpleSelect = /^SELECT\b/i.test(sql.trim());
+  const hasGroupBy = /\bGROUP\s+BY\b/i.test(sql);
+  const hasExperimentTable = /\bFROM\s+"Experiment"/i.test(sql);
+  if (!isSimpleSelect || hasGroupBy || !hasExperimentTable) return sql;
+
+  const requiredCols = [
+    { name: "changeType", quoted: '"changeType"' },
+    { name: "elementChanged", quoted: '"elementChanged"' },
+    { name: "testName", quoted: '"testName"' },
+  ];
+
+  let result = sql;
+  for (const col of requiredCols) {
+    // Check if column is already selected (quoted or unquoted)
+    const alreadyPresent = new RegExp(`\\b${col.name}\\b`, "i").test(
+      result.slice(0, result.search(/\bFROM\b/i))
+    );
+    if (!alreadyPresent) {
+      // Insert after "SELECT " or "SELECT DISTINCT "
+      result = result.replace(
+        /^(SELECT\s+(?:DISTINCT\s+)?)/i,
+        `$1${col.quoted}, `
+      );
+    }
+  }
+  return result;
+}
+
 function sanitizeSql(sql: string) {
   let s = sql.replace(/;+\s*$/, "").trim();
   s = normalizeTableName(s);
   s = normalizeDateSub(s);
   s = normalizeIntervals(s);
   s = normalizeRound(s);
+  s = ensureGraphColumns(s);
   s = ensureLimit(s);
   if (!isSelectOnly(s)) {
     throw new Error("Only SELECT queries are allowed.");
@@ -180,7 +215,7 @@ async function runSql(question: string): Promise<SqlResult> {
 CRITICAL RULES:
 - ALWAYS start with SELECT. NEVER use WITH clauses or CTEs. Only pure SELECT statements.
 - Use only the Experiment table described. Reference it as "Experiment" (double-quoted).
-- Always select the uuid id and experimentId so the UI can link to detail pages.
+- Always select the uuid id, experimentId, testName, changeType, and elementChanged so the UI can link to detail pages and build the experiment graph.
 - SELECT-only. No writes/DDL.
 - Default to the last 12 months if no date range given.
 - Always include a LIMIT <= 500.
