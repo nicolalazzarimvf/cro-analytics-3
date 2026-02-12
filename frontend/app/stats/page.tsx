@@ -21,9 +21,9 @@ export default async function StatsPage() {
   const startThisMonth = startOfUtcMonth(now.getUTCFullYear(), now.getUTCMonth());
   const monthLabel = formatMonthLabel(startPrevMonth);
 
-  // Build monthly buckets for the last 12 months (for KPI cards)
+  // Build monthly buckets for the last 12 completed months (excluding current incomplete month)
   const months: { start: Date; end: Date; label: string }[] = [];
-  for (let i = 11; i >= 0; i--) {
+  for (let i = 12; i >= 1; i--) {
     const y = now.getUTCFullYear();
     const m = now.getUTCMonth() - i;
     const start = startOfUtcMonth(y, m);
@@ -32,7 +32,7 @@ export default async function StatsPage() {
     months.push({ start, end, label });
   }
 
-  // Fetch experiments for KPI cards (last 6 months)
+  // Fetch experiments for KPI cards (last 12 completed months)
   const kpiExperiments = await prisma.experiment.findMany({
     where: {
       dateConcluded: { gte: months[0].start, lt: months[months.length - 1].end },
