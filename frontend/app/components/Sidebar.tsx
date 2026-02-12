@@ -41,6 +41,16 @@ const NAV_ITEMS = [
     ),
   },
   {
+    label: "AI Evals",
+    href: "/evals",
+    icon: (
+      <svg className="shrink-0 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+        <path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0ZM2 8a6 6 0 1 1 12 0A6 6 0 0 1 2 8Z" />
+        <path d="M10.78 5.97a.75.75 0 0 1 0 1.06L8.03 9.78a.75.75 0 0 1-1.06 0L5.22 8.03a.75.75 0 1 1 1.06-1.06l1.22 1.22 2.22-2.22a.75.75 0 0 1 1.06 0Z" />
+      </svg>
+    ),
+  },
+  {
     label: "How it works",
     href: "/how-it-works",
     icon: (
