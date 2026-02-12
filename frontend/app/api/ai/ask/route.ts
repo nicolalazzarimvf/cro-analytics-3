@@ -437,7 +437,8 @@ async function runGraphExperiments(question: string): Promise<GraphExperiment[]>
 async function summarize(
   question: string,
   sqlResult: SqlResult | null,
-  graphResult: GraphResult | null
+  graphResult: GraphResult | null,
+  graphExperiments: GraphExperiment[] = []
 ) {
   // --- SQL data extraction ---
   const sqlRows = sqlResult?.rows ?? [];
@@ -445,7 +446,7 @@ async function summarize(
 
   const learningsRaw = sqlRows.filter((r: any) => r && typeof r === "object" && r.lessonLearned);
   const learnings = learningsRaw
-    .slice(0, 50)
+    .slice(0, 80)
     .map((r: any) => ({
       testName: r.testName,
       changeType: r.changeType,
@@ -463,13 +464,15 @@ async function summarize(
   const winners = sqlRows
     .filter((r: any) => r && r.winningVar && r.monthlyExtrap)
     .sort((a: any, b: any) => (Number(b.monthlyExtrap) || 0) - (Number(a.monthlyExtrap) || 0))
-    .slice(0, 10)
+    .slice(0, 20)
     .map((r: any) => ({
       testName: r.testName,
       monthlyExtrap: r.monthlyExtrap,
       winningVar: r.winningVar,
       crChangeV1: r.crChangeV1,
-      vertical: r.vertical
+      rpvChangeV1: r.rpvChangeV1,
+      vertical: r.vertical,
+      geo: r.geo
     }));
 
   const stats = {
@@ -483,6 +486,12 @@ async function summarize(
   // --- Graph data extraction ---
   const graphRows = graphResult?.rows ?? [];
   const graphSample = graphRows.slice(0, 100);
+
+  // --- Graph experiments (individual rows with attributes — always available) ---
+  const graphExpSample = graphExperiments.slice(0, 150);
+  const graphExpWinners = graphExperiments.filter((e) => e.winningVar).length;
+  const graphExpVerticals = [...new Set(graphExperiments.map((e) => e.vertical).filter(Boolean))];
+  const graphExpGeos = [...new Set(graphExperiments.map((e) => e.geo).filter(Boolean))];
 
   // --- Build prompt sections ---
   let dataSections = "";
@@ -499,7 +508,7 @@ Data Summary:
 - Unique verticals: ${stats.uniqueVerticals}
 - Unique geos: ${stats.uniqueGeos}
 
-Top Winners:
+Top Winners (${winners.length}):
 ${JSON.stringify(winners, null, 2)}
 
 Sample Rows (${sqlSample.length} of ${sqlRows.length}):
@@ -524,63 +533,91 @@ ${JSON.stringify(graphSample, null, 2)}
     dataSections += `\n## Graph Pattern Results\nGraph query failed: ${graphResult.error}\n`;
   }
 
+  if (graphExperiments.length > 0) {
+    dataSections += `
+## Individual Experiments (from graph query — always available)
+Total experiments: ${graphExperiments.length}
+With winners: ${graphExpWinners}
+Verticals: ${graphExpVerticals.join(", ") || "N/A"}
+Geos: ${graphExpGeos.join(", ") || "N/A"}
+
+Sample experiments (${graphExpSample.length} of ${graphExperiments.length}):
+${JSON.stringify(graphExpSample, null, 2)}
+`;
+  }
+
   const prompt = [
     {
       role: "system" as const,
-      content: `You are a senior CRO analyst. Generate a comprehensive analysis from the provided experiment data.
-You have two data sources:
-1. **SQL results** — individual experiment rows with full details (names, metrics, learnings, winners).
-2. **Graph pattern results** — aggregated counts of changeType → elementChanged combinations showing what types of changes are most common.
+      content: `You are a senior CRO (Conversion Rate Optimisation) analyst writing an exhaustive report. You have THREE data sources:
 
-Use BOTH sources to give the richest possible answer. Draw specific experiment examples from the SQL data and high-level patterns from the graph data.
+1. **SQL results** — experiment rows from a direct database query (may be individual rows OR aggregated, depending on the question).
+2. **Graph pattern results** — aggregated changeType → elementChanged combinations with experiment counts.
+3. **Individual experiments** — always present: individual experiment rows with testName, changeType, elementChanged, winningVar, vertical, geo, monthlyExtrap, dateConcluded.
 
-OUTPUT FORMAT (use markdown headers and formatting):
+Cross-reference ALL three sources. Use individual experiments and SQL rows for specific examples, metrics, and quotes. Use graph patterns for macro trends. When SQL returns aggregated data, lean more on the individual experiments for detail.
+
+RULES:
+- Be EXHAUSTIVE and DATA-DRIVEN. Quote real test names, real metrics, real lessons.
+- Never say "there isn't enough data" unless all sources are truly empty.
+- For every claim, cite the experiment name or data point that supports it.
+- Include CR change (crChangeV1), RPV change (rpvChangeV1), monthly extrapolation (monthlyExtrap) whenever available.
+- Organise by theme, not randomly. Group related experiments together.
+
+OUTPUT FORMAT (mandatory markdown — include ALL sections, make each substantial):
 
 ## Executive Summary
-A 2-3 sentence overview answering the user's question directly.
+3-5 sentences directly answering the question. Include the single most important number and the single most important insight.
 
 ## Key Highlights
-• 4-6 bullet points with specific numbers, percentages, and experiment names
-• Include top performers with their metrics (e.g., "+15% CR", "£50K monthly impact")
-• Mention patterns you observe in both SQL and graph data
+• 8-12 bullet points, each citing a specific experiment and metric
+• Top winners by monthly impact with exact numbers
+• Top winners by CR/RPV lift with exact percentages
+• Most common change types tested (with counts from graph data)
+• Win rate across the dataset
+• Any notable failures or surprising results
 
 ## Data Coverage
-• Total experiments analyzed: X
-• Graph patterns found: X
-• Time window: [infer from data]
-• Verticals covered: X unique
-• Geographic regions: X unique
+• Total experiments analysed, with winners count and win rate %
+• Time window covered
+• Verticals: list each unique vertical with experiment count
+• Geos: list each unique geo with experiment count
+• Graph patterns found
 
 ## Detailed Learnings
-For each major insight, provide:
-### [Learning Category/Theme]
-**What we tested:** Brief description
-**What worked:** Specific results with metrics
-**What didn't work:** Negative findings (if applicable)
-**Key quote:** Direct quote from lessonLearned (if available)
-**Example experiments:** 1-2 specific test names
+Group by theme (e.g., by changeType, by elementChanged, by vertical, or by strategy). Include AT LEAST 5-8 sections, more if the data supports it. For each:
 
-Include 3-5 detailed learning sections.
+### [Theme Name]
+**What we tested:** 2-3 sentence description of the experiments in this group
+**What worked:** Specific results with metrics (CR%, RPV%, £ impact). Name the experiments.
+**What didn't work:** Negative results or inconclusive tests (if any). Name the experiments.
+**Lessons learned:** Direct quotes from lessonLearned field when available
+**Key experiments:** List 2-5 specific test names with their outcomes
 
 ## Patterns & Trends
-• Cross-cutting patterns from the graph data (e.g., "CTA changes on Buttons are the most common combination with X experiments")
-• Vertical-specific insights
-• Geographic patterns (if applicable)
+• Most frequently tested change types (from graph patterns, with experiment counts)
+• Most frequently tested elements (from graph patterns, with experiment counts)
+• Which changeType × elementChanged combos yield the highest win rates
+• Vertical-specific patterns (which verticals test what)
+• Geographic patterns (if data shows differences)
+• Seasonal or temporal trends (if dateConcluded shows patterns)
 
 ## Recommended Next Steps
-1. Specific, actionable recommendation
-2. Another recommendation
-3. Questions to explore further
+5-8 specific, actionable recommendations based on the data:
+1. Under-explored areas that deserve more testing
+2. Proven strategies to scale across verticals/geos
+3. Failing patterns to stop investing in
+4. New hypotheses suggested by the data
+5. Specific experiment ideas with expected impact
 
-Be specific and data-driven. Quote actual test names, metrics, and lessons. Avoid generic statements.
-If one data source is empty or failed, still provide analysis from the other.`
+Be thorough. A senior stakeholder reading this should walk away with a complete picture and clear next actions.`
     },
     {
       role: "user" as const,
       content: `Question: ${question}\n${dataSections}`
     }
   ];
-  const answer = await callLLM({ messages: prompt, maxTokens: 2000 });
+  const answer = await callLLM({ messages: prompt, maxTokens: 5000 });
   return answer.trim();
 }
 
@@ -646,8 +683,8 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[AI Ask] Graph experiments (for UI panel): ${graphExperiments.length} experiments`);
 
-    // Summarize using both result sets
-    const answer = await summarize(question, sqlResult, graphResult);
+    // Summarize using all three data sources
+    const answer = await summarize(question, sqlResult, graphResult, graphExperiments);
 
     return NextResponse.json({
       answer,
