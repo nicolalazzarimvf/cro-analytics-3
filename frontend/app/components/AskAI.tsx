@@ -2,7 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
@@ -154,6 +155,58 @@ function computeBreakdowns(rows: Record<string, any>[]) {
     winners: sortedWinners,
   };
 }
+
+/* ── Markdown custom components for prose rendering ── */
+
+const mdComponents: Components = {
+  // H2 → subtle section dividers (Executive Summary, Key Highlights, etc.)
+  h2: ({ children }) => (
+    <div className="not-prose mt-0 mb-3 border-t border-gray-100 first:border-t-0">
+      <span className="inline-block mt-4 mb-1 px-1 text-[10px] font-extrabold tracking-widest uppercase text-slate-400">
+        {children}
+      </span>
+    </div>
+  ),
+
+  // H3 → learning/theme cards with left accent
+  h3: ({ children }) => (
+    <h3 className="not-prose mt-4 mb-2 rounded-md bg-slate-50 border-l-[3px] border-blue-500 px-3 py-2 text-sm font-semibold text-slate-800">
+      {children}
+    </h3>
+  ),
+
+  // Strong at the start of a paragraph → muted label style
+  strong: ({ children }) => (
+    <strong className="font-bold text-slate-900">{children}</strong>
+  ),
+
+  // Tables (from remark-gfm) → nice bordered table
+  table: ({ children }) => (
+    <div className="overflow-x-auto my-3">
+      <table className="min-w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
+      {children}
+    </thead>
+  ),
+  th: ({ children }) => (
+    <th className="px-3 py-2 border-b border-gray-200">{children}</th>
+  ),
+  td: ({ children }) => (
+    <td className="px-3 py-2 border-b border-gray-100">{children}</td>
+  ),
+
+  // Blockquotes → call-out style
+  blockquote: ({ children }) => (
+    <blockquote className="not-prose my-3 rounded-r-md border-l-[3px] border-blue-300 bg-blue-50/50 px-4 py-3 text-sm text-blue-900 italic">
+      {children}
+    </blockquote>
+  ),
+};
 
 /* ── Main component ── */
 
@@ -415,167 +468,21 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
 
       {/* ── AI answer ── */}
       {result?.answer ? (
-        <div className="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm ai-response">
-          <style jsx global>{`
-            .ai-response {
-              padding: 0;
-              overflow: hidden;
-              font-size: 0.8125rem;
-              color: #334155;
-              line-height: 1.7;
-            }
-
-            /* ── H2 — section dividers ── */
-            .ai-response h2 {
-              margin: 0;
-              padding: 0.5rem 1.25rem;
-              font-size: 0.625rem;
-              font-weight: 800;
-              letter-spacing: 0.1em;
-              text-transform: uppercase;
-              color: #94a3b8;
-              background: #f8fafc;
-              border-top: 1px solid #f1f5f9;
-            }
-            .ai-response h2:first-child {
-              border-top: none;
-              border-radius: 0.75rem 0.75rem 0 0;
-            }
-
-            /* ── Content padding ── */
-            .ai-response h2 + * { margin-top: 0; }
-            .ai-response p,
-            .ai-response ul,
-            .ai-response ol,
-            .ai-response blockquote {
-              padding-left: 1.25rem;
-              padding-right: 1.25rem;
-            }
-
-            /* ── H3 — learning cards ── */
-            .ai-response h3 {
-              margin: 0.625rem 1rem 0.375rem;
-              padding: 0.5rem 0.75rem;
-              font-size: 0.8125rem;
-              font-weight: 600;
-              color: #1e293b;
-              background: #f1f5f9;
-              border-radius: 0.375rem;
-              border-left: 3px solid #465fff;
-            }
-
-            /* ── H4 ── */
-            .ai-response h4 {
-              margin: 0.375rem 1.25rem 0.125rem;
-              font-size: 0.8125rem;
-              font-weight: 600;
-              color: #334155;
-            }
-
-            /* ── Paragraphs ── */
-            .ai-response p {
-              margin-bottom: 0.375rem;
-              padding-top: 0.125rem;
-            }
-            .ai-response > p:first-of-type {
-              padding-top: 0.875rem;
-            }
-
-            /* ── Strong — inline bold ── */
-            .ai-response strong {
-              font-weight: 700;
-              color: #0f172a;
-            }
-            .ai-response p > strong:first-child {
-              color: #64748b;
-              font-size: 0.6875rem;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.04em;
-            }
-
-            /* ── Unordered lists ── */
-            .ai-response ul {
-              margin: 0.125rem 0 0.5rem;
-              list-style: none;
-            }
-            .ai-response ul li {
-              position: relative;
-              padding-left: 0.875rem;
-              margin-bottom: 0.125rem;
-            }
-            .ai-response ul li::before {
-              content: "";
-              position: absolute;
-              left: 0;
-              top: 0.6em;
-              width: 4px;
-              height: 4px;
-              border-radius: 50%;
-              background: #cbd5e1;
-            }
-
-            /* ── Ordered lists ── */
-            .ai-response ol {
-              margin: 0.125rem 0 0.5rem;
-              list-style: none;
-              counter-reset: ol-counter;
-            }
-            .ai-response ol li {
-              position: relative;
-              padding-left: 1.75rem;
-              margin-bottom: 0.375rem;
-              counter-increment: ol-counter;
-            }
-            .ai-response ol li::before {
-              content: counter(ol-counter);
-              position: absolute;
-              left: 0;
-              top: 0.1em;
-              width: 1.25rem;
-              height: 1.25rem;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 0.625rem;
-              font-weight: 800;
-              color: white;
-              background: #465fff;
-              border-radius: 50%;
-            }
-
-            /* ── Misc ── */
-            .ai-response em { font-style: italic; color: #64748b; }
-            .ai-response code {
-              background: #f1f5f9;
-              padding: 0.0625rem 0.3125rem;
-              border-radius: 0.1875rem;
-              font-size: 0.75rem;
-              font-family: ui-monospace, monospace;
-              color: #475569;
-            }
-            .ai-response blockquote {
-              border-left: 3px solid #e2e8f0;
-              background: #f8fafc;
-              padding: 0.625rem 1rem;
-              margin: 0.375rem 1.25rem;
-              border-radius: 0 0.375rem 0.375rem 0;
-            }
-            .ai-response blockquote p {
-              margin: 0; padding: 0;
-              font-style: italic;
-              color: #475569;
-            }
-            .ai-response hr {
-              margin: 0;
-              border: none;
-              border-top: 1px solid #f1f5f9;
-            }
-            .ai-response > *:last-child {
-              padding-bottom: 1rem;
-            }
-          `}</style>
-          <ReactMarkdown>{result.answer}</ReactMarkdown>
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white px-5 py-5 shadow-sm prose prose-sm prose-slate max-w-none
+          prose-headings:text-slate-800
+          prose-h4:text-sm prose-h4:font-semibold prose-h4:mt-3 prose-h4:mb-1
+          prose-p:text-slate-600 prose-p:leading-relaxed prose-p:my-1.5
+          prose-li:text-slate-600 prose-li:my-0.5
+          prose-strong:text-slate-900
+          prose-em:text-slate-500
+          prose-code:text-slate-700 prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
+          prose-hr:my-3 prose-hr:border-gray-100
+          prose-ul:my-2 prose-ol:my-2
+          prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+            {result.answer}
+          </ReactMarkdown>
         </div>
       ) : null}
 
