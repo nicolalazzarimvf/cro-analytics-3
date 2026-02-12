@@ -447,10 +447,14 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
   return (
     <section className="space-y-0">
       {/* ── Ask form ── */}
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-sm dark:shadow-none">
+      <div className="relative rounded-2xl border-2 border-violet-400 dark:border-violet-500 bg-white dark:bg-gray-800 p-6 shadow-sm dark:shadow-none animate-[pulse-border_3s_ease-in-out_infinite]">
+        {/* Pulsing glow ring */}
+        <div className="pointer-events-none absolute -inset-px rounded-2xl border-2 border-violet-400/60 dark:border-violet-500/40 animate-ping [animation-duration:3s] opacity-30" />
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">Ask the data</h2>
+            <h2 className="text-xl font-bold tracking-tight text-violet-700 dark:text-violet-400 sm:text-2xl">
+              Ask the data
+            </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Ask anything about experiments; we&apos;ll query the database and summarise.
             </p>

@@ -269,3 +269,13 @@ input[type="search"]::-webkit-search-results-decoration {
     -webkit-appearance: none;
   }
 }
+
+/* ── Pulsing border glow for the Ask the data card ── */
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 16px 4px rgba(139, 92, 246, 0.25);
+  }
+}
