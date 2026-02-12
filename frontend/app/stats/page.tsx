@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db/client";
 import AskAI from "@/app/components/AskAI";
+import DashboardCards from "@/app/components/DashboardCards";
 
 function startOfUtcMonth(year: number, monthIndex0: number) {
   return new Date(Date.UTC(year, monthIndex0, 1, 0, 0, 0, 0));
@@ -9,11 +10,80 @@ function formatMonthLabel(date: Date) {
   return date.toLocaleString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+function pctChange(a: number, b: number) {
+  if (b === 0) return a > 0 ? 100 : 0;
+  return Math.round(((a - b) / b) * 100);
+}
+
 export default async function StatsPage() {
   const now = new Date();
   const startPrevMonth = startOfUtcMonth(now.getUTCFullYear(), now.getUTCMonth() - 1);
   const startThisMonth = startOfUtcMonth(now.getUTCFullYear(), now.getUTCMonth());
   const monthLabel = formatMonthLabel(startPrevMonth);
+
+  // Build monthly buckets for the last 6 months (for KPI cards)
+  const months: { start: Date; end: Date; label: string }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const y = now.getUTCFullYear();
+    const m = now.getUTCMonth() - i;
+    const start = startOfUtcMonth(y, m);
+    const end = startOfUtcMonth(y, m + 1);
+    const label = start.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+    months.push({ start, end, label });
+  }
+
+  // Fetch experiments for KPI cards (last 6 months)
+  const kpiExperiments = await prisma.experiment.findMany({
+    where: {
+      dateConcluded: { gte: months[0].start, lt: months[months.length - 1].end },
+    },
+    select: { dateConcluded: true, winningVar: true, monthlyExtrap: true },
+  });
+
+  const perMonth = months.map((m) => {
+    const bucket = kpiExperiments.filter(
+      (e) => e.dateConcluded && e.dateConcluded >= m.start && e.dateConcluded < m.end,
+    );
+    const total = bucket.length;
+    const wins = bucket.filter(
+      (e) => e.winningVar && e.winningVar.trim() !== "" && e.winningVar.trim().toLowerCase() !== "control",
+    ).length;
+    const revenue = bucket.reduce((sum, e) => sum + (e.monthlyExtrap ?? 0), 0);
+    return { label: m.label, total, wins, winRate: total > 0 ? Math.round((wins / total) * 100) : 0, revenue };
+  });
+
+  const curr = perMonth[perMonth.length - 1];
+  const prev = perMonth[perMonth.length - 2];
+
+  const cards = [
+    {
+      title: "Experiments",
+      subtitle: "CONCLUDED",
+      value: curr.total.toString(),
+      change: pctChange(curr.total, prev.total),
+      sparkline: perMonth.map((m) => m.total),
+    },
+    {
+      title: "Win Rate",
+      subtitle: "WINNERS",
+      value: `${curr.winRate}%`,
+      change: curr.winRate - prev.winRate,
+      sparkline: perMonth.map((m) => m.winRate),
+    },
+    {
+      title: "Revenue Impact",
+      subtitle: "MONTHLY EXTRAP",
+      value: new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency: "GBP",
+        maximumFractionDigits: 0,
+      }).format(curr.revenue),
+      change: pctChange(curr.revenue, prev.revenue),
+      sparkline: perMonth.map((m) => m.revenue),
+    },
+  ];
+
+  const sparkLabels = perMonth.map((m) => m.label);
 
   // Fetch previous month experiments for default stats
   const rows = await prisma.experiment.findMany({
@@ -59,7 +129,10 @@ export default async function StatsPage() {
         </p>
       </div>
 
-      <div className="mt-4">
+      {/* KPI cards */}
+      <DashboardCards cards={cards} labels={sparkLabels} />
+
+      <div className="mt-8">
         <AskAI
           defaultRows={serializedRows}
           defaultLabel={monthLabel}
