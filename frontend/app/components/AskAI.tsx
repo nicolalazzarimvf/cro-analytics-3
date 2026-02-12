@@ -395,116 +395,150 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
       {result?.answer ? (
         <div className="mt-4 rounded-xl border border-gray-200 bg-white shadow-sm ai-response">
           <style jsx global>{`
-            .ai-response { padding: 0; }
+            /* ── Reset ── */
+            .ai-response {
+              padding: 0;
+              overflow: hidden;
+            }
+
+            /* ── H2 section headers — full-width accent bars ── */
             .ai-response h2 {
               margin: 0;
-              padding: 0.75rem 1.25rem;
-              font-size: 0.8125rem;
-              font-weight: 700;
-              letter-spacing: 0.04em;
+              padding: 0.625rem 1.25rem;
+              font-size: 0.6875rem;
+              font-weight: 800;
+              letter-spacing: 0.08em;
               text-transform: uppercase;
               color: #465fff;
-              background: #f8fafc;
+              background: linear-gradient(to right, #f0f4ff, #f8fafc);
               border-top: 1px solid #e5e7eb;
             }
             .ai-response h2:first-child {
               border-top: none;
               border-radius: 0.75rem 0.75rem 0 0;
             }
+
+            /* ── Content after H2 — padded sections ── */
             .ai-response h2 + * { margin-top: 0; }
             .ai-response h2 ~ p,
             .ai-response h2 ~ ul,
             .ai-response h2 ~ ol,
             .ai-response h2 ~ blockquote {
-              padding-left: 1.25rem;
-              padding-right: 1.25rem;
-            }
-            .ai-response h3 {
-              margin: 0.75rem 1.25rem 0.5rem;
-              padding: 0.625rem 0.875rem;
-              font-size: 0.875rem;
-              font-weight: 600;
-              color: #1f2937;
-              background: #f9fafb;
-              border: 1px solid #e5e7eb;
-              border-radius: 0.5rem;
-            }
-            .ai-response h3 + p,
-            .ai-response h3 + ul {
               margin-left: 1.25rem;
               margin-right: 1.25rem;
-              padding-left: 0.875rem;
-              padding-right: 0.875rem;
-              border-left: 2px solid #e5e7eb;
             }
+
+            /* ── H3 sub-sections — card style ── */
+            .ai-response h3 {
+              margin: 1rem 1.25rem 0;
+              padding: 0.5rem 0.75rem;
+              font-size: 0.8125rem;
+              font-weight: 700;
+              color: #1e293b;
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 0.5rem 0.5rem 0 0;
+              border-bottom: 2px solid #465fff;
+            }
+
+            /* Content immediately after H3 — indented card body */
+            .ai-response h3 + p,
+            .ai-response h3 + ul,
+            .ai-response h3 + ol {
+              margin: 0 1.25rem 0.75rem;
+              padding: 0.75rem;
+              background: #fafbfc;
+              border: 1px solid #e2e8f0;
+              border-top: none;
+              border-radius: 0 0 0.5rem 0.5rem;
+            }
+            /* Subsequent siblings of h3 (2nd p, 2nd ul after h3) */
+            .ai-response h3 ~ p,
+            .ai-response h3 ~ ul,
+            .ai-response h3 ~ ol {
+              margin-left: 1.25rem;
+              margin-right: 1.25rem;
+              padding-left: 0.75rem;
+              padding-right: 0.75rem;
+            }
+
+            /* ── H4 ── */
             .ai-response h4 {
-              margin: 0.625rem 1.25rem 0.25rem;
+              margin: 0.5rem 1.25rem 0.25rem;
               font-size: 0.8125rem;
               font-weight: 600;
-              color: #374151;
+              color: #334155;
             }
+
+            /* ── Paragraphs ── */
             .ai-response p {
-              margin-bottom: 0.625rem;
-              padding-top: 0.375rem;
-              font-size: 0.875rem;
+              margin-bottom: 0.5rem;
+              font-size: 0.8125rem;
               color: #374151;
-              line-height: 1.7;
+              line-height: 1.75;
             }
             .ai-response > p:first-of-type {
               padding: 1rem 1.25rem 0;
             }
+
+            /* ── Strong labels — "What we tested:", "What worked:" etc ── */
             .ai-response strong {
-              font-weight: 600;
-              color: #111827;
+              font-weight: 700;
+              color: #0f172a;
             }
             .ai-response p > strong:first-child {
-              display: inline-block;
-              margin-bottom: 0.125rem;
-              font-size: 0.75rem;
-              font-weight: 700;
-              letter-spacing: 0.02em;
+              display: block;
+              margin-top: 0.5rem;
+              margin-bottom: 0.25rem;
+              padding: 0.25rem 0;
+              font-size: 0.6875rem;
+              font-weight: 800;
+              letter-spacing: 0.06em;
               text-transform: uppercase;
-              color: #6b7280;
+              color: #465fff;
+              border-bottom: 1px solid #e5e7eb;
             }
+
+            /* ── Unordered lists ── */
             .ai-response ul {
               margin-top: 0.25rem;
               margin-bottom: 0.75rem;
-              padding-left: 1.25rem;
-              padding-right: 1.25rem;
+              padding-left: 0;
               list-style: none;
             }
             .ai-response ul li {
               position: relative;
-              padding-left: 1rem;
-              font-size: 0.875rem;
+              padding-left: 1.125rem;
+              font-size: 0.8125rem;
               color: #374151;
-              line-height: 1.65;
-              margin-bottom: 0.375rem;
+              line-height: 1.7;
+              margin-bottom: 0.25rem;
             }
             .ai-response ul li::before {
               content: "";
               position: absolute;
-              left: 0;
+              left: 0.125rem;
               top: 0.55em;
               width: 5px;
               height: 5px;
               border-radius: 50%;
               background: #465fff;
             }
+
+            /* ── Ordered lists ── */
             .ai-response ol {
               margin-top: 0.25rem;
               margin-bottom: 0.75rem;
-              padding-left: 1.25rem;
-              padding-right: 1.25rem;
+              padding-left: 0;
               list-style: none;
               counter-reset: ol-counter;
             }
             .ai-response ol li {
               position: relative;
-              padding-left: 1.75rem;
-              font-size: 0.875rem;
+              padding-left: 2rem;
+              font-size: 0.8125rem;
               color: #374151;
-              line-height: 1.65;
+              line-height: 1.7;
               margin-bottom: 0.5rem;
               counter-increment: ol-counter;
             }
@@ -512,35 +546,41 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
               content: counter(ol-counter);
               position: absolute;
               left: 0;
-              top: 0.05em;
-              width: 1.25rem;
-              height: 1.25rem;
+              top: 0.1em;
+              width: 1.375rem;
+              height: 1.375rem;
               display: flex;
               align-items: center;
               justify-content: center;
               font-size: 0.6875rem;
-              font-weight: 700;
+              font-weight: 800;
               color: white;
               background: #465fff;
               border-radius: 50%;
             }
+
+            /* ── Emphasis ── */
             .ai-response em {
               font-style: italic;
-              color: #6b7280;
+              color: #64748b;
             }
+
+            /* ── Inline code ── */
             .ai-response code {
-              background: #f3f4f6;
+              background: #f1f5f9;
               padding: 0.125rem 0.375rem;
               border-radius: 0.25rem;
               font-size: 0.75rem;
-              font-family: monospace;
+              font-family: ui-monospace, monospace;
               color: #465fff;
             }
+
+            /* ── Blockquotes ── */
             .ai-response blockquote {
               border-left: 3px solid #465fff;
               background: #eff6ff;
               padding: 0.75rem 1rem;
-              margin: 0.75rem 1.25rem;
+              margin: 0.5rem 1.25rem;
               border-radius: 0 0.5rem 0.5rem 0;
             }
             .ai-response blockquote p {
@@ -551,13 +591,17 @@ export default function AskAI({ defaultRows, defaultLabel }: AskAIProps = {}) {
               color: #1e40af;
               line-height: 1.6;
             }
+
+            /* ── Horizontal rules ── */
             .ai-response hr {
               margin: 0;
               border: none;
               border-top: 1px solid #e5e7eb;
             }
+
+            /* ── Bottom padding ── */
             .ai-response > *:last-child {
-              padding-bottom: 1rem;
+              padding-bottom: 1.25rem;
             }
           `}</style>
           <ReactMarkdown>{result.answer}</ReactMarkdown>
