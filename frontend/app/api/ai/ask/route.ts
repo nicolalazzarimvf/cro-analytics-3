@@ -597,10 +597,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(
-      `[AI Ask] SQL: ${sqlResult.error ? "FAILED" : `${sqlResult.rowCount} rows`}, ` +
-      `Graph: ${graphResult.error ? "FAILED" : `${graphResult.rowCount} patterns`}`
-    );
+    const learningsCount = sqlResult.rows.filter((r: any) => r?.lessonLearned).length;
+    const winnersCount = sqlResult.rows.filter((r: any) => r?.winningVar).length;
+
+    console.log(`[AI Ask] ─── Query: "${question}" ───`);
+    console.log(`[AI Ask] SQL: ${sqlResult.error ? `FAILED (${sqlResult.error})` : `${sqlResult.rowCount} rows fetched`}`);
+    if (!sqlResult.error) {
+      console.log(`[AI Ask]   └─ SQL used: ${sqlResult.sql}`);
+      console.log(`[AI Ask]   └─ With learnings: ${learningsCount}, With winners: ${winnersCount}`);
+      console.log(`[AI Ask]   └─ Sending to LLM: ${Math.min(sqlResult.rowCount, 200)} sample rows, ${Math.min(learningsCount, 50)} learnings, ${Math.min(winnersCount, 10)} top winners`);
+    }
+    console.log(`[AI Ask] Graph patterns: ${graphResult.error ? `FAILED (${graphResult.error})` : `${graphResult.rowCount} patterns`}`);
+    if (!graphResult.error) {
+      console.log(`[AI Ask]   └─ Sending to LLM: ${Math.min(graphResult.rowCount, 100)} patterns`);
+    }
+    console.log(`[AI Ask] Graph experiments (for UI panel): ${graphExperiments.length} experiments`);
 
     // Summarize using both result sets
     const answer = await summarize(question, sqlResult, graphResult);

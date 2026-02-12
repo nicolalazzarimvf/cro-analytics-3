@@ -130,7 +130,7 @@ export default function AskAI() {
       if (!res.ok) {
         setError(json.error || "Request failed");
       } else {
-        setResult({
+        const resultData = {
           answer: json.answer,
           sql: json.sql,
           sqlError: json.sqlError,
@@ -141,7 +141,13 @@ export default function AskAI() {
           graphRowCount: json.graphRowCount ?? 0,
           graphError: json.graphError,
           graphExperiments: json.graphExperiments ?? [],
-        });
+        };
+        console.log(`[AskAI] ─── Results for: "${question}" ───`);
+        console.log(`[AskAI] SQL: ${resultData.sqlError ? `FAILED` : `${resultData.rowCount} rows`}`);
+        console.log(`[AskAI] Graph patterns: ${resultData.graphError ? `FAILED` : `${resultData.graphRowCount} patterns`}`);
+        console.log(`[AskAI] Graph experiments (for panel): ${resultData.graphExperiments.length}`);
+        console.log(`[AskAI] Full result:`, resultData);
+        setResult(resultData);
         setTablePage(1);
         setExpandedAttrs(new Set());
       }
@@ -555,6 +561,29 @@ export default function AskAI() {
           <ReactMarkdown>{result.answer}</ReactMarkdown>
         </div>
       ) : null}
+      {/* ── Analysis stats bar ── */}
+      {result ? (
+        <div className="mt-2 flex flex-wrap items-center gap-3 rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-[11px] text-gray-500">
+          <span className="font-semibold text-gray-700">Analysis scope:</span>
+          <span>{result.rowCount} SQL rows</span>
+          <span className="text-gray-300">|</span>
+          <span>{result.graphRowCount} graph patterns</span>
+          <span className="text-gray-300">|</span>
+          <span>{result.graphExperiments.length} experiments for graph</span>
+          {result.sqlError ? (
+            <>
+              <span className="text-gray-300">|</span>
+              <span className="text-red-500">SQL error</span>
+            </>
+          ) : null}
+          {result.graphError ? (
+            <>
+              <span className="text-gray-300">|</span>
+              <span className="text-red-500">Graph error</span>
+            </>
+          ) : null}
+        </div>
+      ) : null}
       {result ? (() => {
         const graphData = buildGraphData(result.graphRows);
         const selectedExps = expandedAttrs.size > 0
@@ -623,13 +652,27 @@ export default function AskAI() {
                     warmupTicks={30}
                     cooldownTicks={100}
                     onNodeClick={(node: any) => {
+                      console.log(`[Graph] Node clicked:`, { id: node.id, type: node.type, label: node.label });
                       if (node.type === "change" || node.type === "element") {
+                        const matchingExps = getExperimentsForAttr(node.id, result.graphExperiments);
+                        console.log(`[Graph] Matching experiments for "${node.id}":`, matchingExps.length);
+                        if (matchingExps.length === 0) {
+                          console.warn(`[Graph] No experiments found! Available graphExperiments:`, result.graphExperiments.length);
+                          console.warn(`[Graph] Sample graphExperiments:`, result.graphExperiments.slice(0, 5));
+                        }
                         setExpandedAttrs((prev) => {
                           const next = new Set(prev);
-                          if (next.has(node.id)) next.delete(node.id);
-                          else next.add(node.id);
+                          if (next.has(node.id)) {
+                            next.delete(node.id);
+                            console.log(`[Graph] Collapsed "${node.id}". Active selections:`, Array.from(next));
+                          } else {
+                            next.add(node.id);
+                            console.log(`[Graph] Expanded "${node.id}". Active selections:`, Array.from(next));
+                          }
                           return next;
                         });
+                      } else {
+                        console.log(`[Graph] Node type "${node.type}" is not expandable`);
                       }
                     }}
                   />
