@@ -6,6 +6,15 @@ import ReactMarkdown from "react-markdown";
 
 const ForceGraph3D = dynamic(() => import("react-force-graph-3d"), { ssr: false });
 
+type GraphExperiment = {
+  id: string;
+  experimentId: string;
+  testName: string | null;
+  changeType: string | null;
+  elementChanged: string | null;
+  winningVar: string | null;
+};
+
 type AskResponse = {
   answer?: string;
   // SQL
@@ -18,6 +27,7 @@ type AskResponse = {
   graphRows: Record<string, any>[];
   graphRowCount: number;
   graphError?: string;
+  graphExperiments: GraphExperiment[];
   // General
   error?: string;
 };
@@ -45,13 +55,14 @@ type GLink = { source: string; target: string };
 
 /**
  * Build graph data that starts with attribute nodes (changeType ↔ elementChanged)
- * and can be expanded to show individual experiments when an attribute is clicked.
+ * and expands to show individual experiments when an attribute node is clicked.
  *
- * `expandedAttrs` tracks which attribute node IDs have been expanded.
+ * `graphExperiments` is a dedicated list of experiments with their attributes,
+ * fetched independently from the LLM SQL query — so we always have data to expand.
  */
 function buildCombinedGraphData(
-  sqlRows: Record<string, any>[],
   graphRows: Record<string, any>[],
+  graphExperiments: GraphExperiment[],
   expandedAttrs: Set<string>,
 ) {
   const nodesMap = new Map<string, GNode>();
@@ -84,15 +95,14 @@ function buildCombinedGraphData(
     }
   }
 
-  // 2. For each expanded attribute, add matching experiments from SQL rows
-  if (expandedAttrs.size > 0) {
-    const experiments = sqlRows.filter((r) => r && r.experimentId).slice(0, 50);
-    for (const exp of experiments) {
-      const expId = (exp.experimentId ?? "").toString().trim();
+  // 2. For each expanded attribute, add matching experiments
+  if (expandedAttrs.size > 0 && graphExperiments.length > 0) {
+    for (const exp of graphExperiments) {
+      const expId = (exp.experimentId ?? "").trim();
       if (!expId) continue;
 
-      const ct = (exp.changeType ?? "").toString().trim();
-      const el = (exp.elementChanged ?? "").toString().trim();
+      const ct = (exp.changeType ?? "").trim();
+      const el = (exp.elementChanged ?? "").trim();
       const ctKey = ct ? `ct:${ct}` : "";
       const elKey = el ? `el:${el}` : "";
 
@@ -106,17 +116,15 @@ function buildCombinedGraphData(
           id: expId,
           label: expId,
           type: "experiment",
-          uuid: exp.id?.toString(),
-          title: exp.testName?.toString() ?? undefined,
+          uuid: exp.id,
+          title: exp.testName ?? undefined,
         });
       }
 
-      // Link to changeType
       if (ctKey && nodesMap.has(ctKey)) {
         const lk = `${expId}->${ctKey}`;
         if (!seenLinks.has(lk)) { seenLinks.add(lk); links.push({ source: expId, target: ctKey }); }
       }
-      // Link to elementChanged
       if (elKey && nodesMap.has(elKey)) {
         const lk = `${expId}->${elKey}`;
         if (!seenLinks.has(lk)) { seenLinks.add(lk); links.push({ source: expId, target: elKey }); }
@@ -167,6 +175,7 @@ export default function AskAI() {
           graphRows: json.graphRows ?? [],
           graphRowCount: json.graphRowCount ?? 0,
           graphError: json.graphError,
+          graphExperiments: json.graphExperiments ?? [],
         });
         setTablePage(1);
         setExpandedAttrs(new Set());
@@ -491,7 +500,7 @@ export default function AskAI() {
         </div>
       ) : null}
       {result ? (() => {
-        const graphData = buildCombinedGraphData(result.rows, result.graphRows, expandedAttrs);
+        const graphData = buildCombinedGraphData(result.graphRows, result.graphExperiments, expandedAttrs);
         const expCount = graphData?.nodes.filter((n) => n.type === "experiment").length ?? 0;
         return (
           <>

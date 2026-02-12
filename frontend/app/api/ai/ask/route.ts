@@ -18,6 +18,15 @@ type GraphResult = {
   error?: string;
 };
 
+type GraphExperiment = {
+  id: string;
+  experimentId: string;
+  testName: string | null;
+  changeType: string | null;
+  elementChanged: string | null;
+  winningVar: string | null;
+};
+
 function isSelectOnly(sql: string) {
   const trimmed = sql.trim().toLowerCase();
   if (!trimmed.startsWith("select")) return false;
@@ -333,6 +342,65 @@ async function runGraph(question: string): Promise<GraphResult> {
   return { rows, rowCount: rows.length };
 }
 
+/**
+ * Fetch individual experiments with their graph-relevant attributes.
+ * Uses the same filter extraction as runGraph so the experiments match
+ * the graph patterns. These are sent to the frontend for graph expansion.
+ */
+async function runGraphExperiments(question: string): Promise<GraphExperiment[]> {
+  const q = question.toLowerCase();
+  const wantsFailed = q.includes("fail") || q.includes("failed") || q.includes("failing");
+  const wantsWinners = q.includes("winner") || q.includes("winning") || q.includes("won") || q.includes("worked");
+
+  const where: string[] = [
+    `"changeType" IS NOT NULL AND "changeType" != ''`,
+    `"elementChanged" IS NOT NULL AND "elementChanged" != ''`,
+  ];
+  const params: any[] = [];
+  let idx = 1;
+
+  // Date filter — last 12 months
+  where.push(
+    `(("dateConcluded" >= NOW() - INTERVAL '12 months') OR ("dateLaunched" >= NOW() - INTERVAL '12 months') OR ("dateConcluded" IS NULL AND "dateLaunched" IS NULL))`
+  );
+
+  // Vertical
+  const verticalPatterns = [/solar/i, /hearing/i, /merchant/i, /heat pump/i, /boiler/i, /window/i, /insulation/i, /charger/i];
+  for (const p of verticalPatterns) {
+    if (p.test(question)) {
+      where.push(`"vertical" ILIKE $${idx}`);
+      params.push(`%${question.match(p)?.[0]}%`);
+      idx++;
+      break;
+    }
+  }
+
+  // Geo
+  const geoPatterns = [/\bUK\b/, /\bUS\b/, /\bDK\b/, /\bDE\b/, /\bAU\b/, /\bNZ\b/, /\bCA\b/];
+  for (const p of geoPatterns) {
+    if (p.test(question)) {
+      where.push(`"geo" ILIKE $${idx}`);
+      params.push(`%${question.match(p)?.[0]}%`);
+      idx++;
+      break;
+    }
+  }
+
+  if (wantsFailed) where.push(`("winningVar" IS NULL OR "winningVar" = '')`);
+  if (wantsWinners) where.push(`"winningVar" IS NOT NULL AND "winningVar" != ''`);
+
+  const sql = `
+    SELECT "id", "experimentId", "testName", "changeType", "elementChanged", "winningVar"
+    FROM "Experiment"
+    WHERE ${where.join(" AND ")}
+    ORDER BY COALESCE("dateConcluded", "dateLaunched") DESC NULLS LAST
+    LIMIT 100
+  `;
+
+  const rows = await prisma.$queryRawUnsafe(sql, ...params);
+  return (Array.isArray(rows) ? rows : []) as GraphExperiment[];
+}
+
 async function summarize(
   question: string,
   sqlResult: SqlResult | null,
@@ -505,8 +573,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Run SQL and Graph in parallel — both are independent
-    const [sqlResult, graphResult] = await Promise.all([
+    // Run SQL, Graph patterns, and Graph experiments in parallel
+    const [sqlResult, graphResult, graphExperiments] = await Promise.all([
       runSql(question).catch((e): SqlResult => {
         console.error(`[AI Ask] SQL failed:`, e instanceof Error ? e.message : e);
         return { sql: "", notes: "", rows: [], rowCount: 0, error: e instanceof Error ? e.message : String(e) };
@@ -514,6 +582,10 @@ export async function POST(request: NextRequest) {
       runGraph(question).catch((e): GraphResult => {
         console.error(`[AI Ask] Graph failed:`, e instanceof Error ? e.message : e);
         return { rows: [], rowCount: 0, error: e instanceof Error ? e.message : String(e) };
+      }),
+      runGraphExperiments(question).catch((e): GraphExperiment[] => {
+        console.error(`[AI Ask] Graph experiments failed:`, e instanceof Error ? e.message : e);
+        return [];
       }),
     ]);
 
@@ -545,6 +617,8 @@ export async function POST(request: NextRequest) {
       graphRows: graphResult.rows ?? [],
       graphRowCount: graphResult.rowCount ?? 0,
       graphError: graphResult.error || undefined,
+      // Individual experiments for graph expand
+      graphExperiments: graphExperiments ?? [],
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
