@@ -35,8 +35,15 @@ function isSelectOnly(sql: string) {
 }
 
 function ensureLimit(sql: string, max = 2000) {
-  const hasLimit = /\blimit\s+\d+/i.test(sql);
-  if (hasLimit) return sql;
+  // If the LLM already included a LIMIT, override it if it's too small
+  const limitMatch = sql.match(/\bLIMIT\s+(\d+)/i);
+  if (limitMatch) {
+    const existing = Number(limitMatch[1]);
+    if (existing < max) {
+      return sql.replace(/\bLIMIT\s+\d+/i, `LIMIT ${max}`);
+    }
+    return sql;
+  }
   return `${sql.trim().replace(/;+\s*$/, "")} LIMIT ${max}`;
 }
 
@@ -226,8 +233,8 @@ CRITICAL RULES:
 - Use only the Experiment table described. Reference it as "Experiment" (double-quoted).
 - Always select the uuid id, experimentId, testName, changeType, and elementChanged so the UI can link to detail pages and build the experiment graph.
 - SELECT-only. No writes/DDL.
-- Default to the last 12 months if no date range given.
-- Always include a LIMIT <= 2000.
+- Default to the last 24 months if no date range given.
+- ALWAYS use LIMIT 2000 unless the user asks for fewer results.
 - Prefer dateConcluded; if missing, fall back to dateLaunched.
 - Use ISO dates (YYYY-MM-DD).
 
@@ -322,7 +329,7 @@ async function runGraph(question: string): Promise<GraphResult> {
     geo,
     onlyFailed: wantsFailed,
     onlyWinners: wantsWinners,
-    monthsBack: 12,
+    monthsBack: 24,
     limit: 500
   });
 
@@ -353,16 +360,11 @@ async function runGraphExperiments(question: string): Promise<GraphExperiment[]>
   const wantsWinners = q.includes("winner") || q.includes("winning") || q.includes("won") || q.includes("worked");
 
   const where: string[] = [
-    `"changeType" IS NOT NULL AND "changeType" != ''`,
-    `"elementChanged" IS NOT NULL AND "elementChanged" != ''`,
+    // At least one attribute must be present (OR, not AND)
+    `(("changeType" IS NOT NULL AND "changeType" != '') OR ("elementChanged" IS NOT NULL AND "elementChanged" != ''))`,
   ];
   const params: any[] = [];
   let idx = 1;
-
-  // Date filter — last 12 months
-  where.push(
-    `(("dateConcluded" >= NOW() - INTERVAL '12 months') OR ("dateLaunched" >= NOW() - INTERVAL '12 months') OR ("dateConcluded" IS NULL AND "dateLaunched" IS NULL))`
-  );
 
   // Vertical
   const verticalPatterns = [/solar/i, /hearing/i, /merchant/i, /heat pump/i, /boiler/i, /window/i, /insulation/i, /charger/i];
@@ -389,16 +391,36 @@ async function runGraphExperiments(question: string): Promise<GraphExperiment[]>
   if (wantsFailed) where.push(`("winningVar" IS NULL OR "winningVar" = '')`);
   if (wantsWinners) where.push(`"winningVar" IS NOT NULL AND "winningVar" != ''`);
 
+  // First try with 24-month window
+  const dateWhere = [...where, `(("dateConcluded" >= NOW() - INTERVAL '24 months') OR ("dateLaunched" >= NOW() - INTERVAL '24 months') OR ("dateConcluded" IS NULL AND "dateLaunched" IS NULL))`];
+
   const sql = `
     SELECT "id", "experimentId", "testName", "changeType", "elementChanged", "winningVar"
     FROM "Experiment"
-    WHERE ${where.join(" AND ")}
+    WHERE ${dateWhere.join(" AND ")}
     ORDER BY COALESCE("dateConcluded", "dateLaunched") DESC NULLS LAST
     LIMIT 500
   `;
 
-  const rows = await prisma.$queryRawUnsafe(sql, ...params);
-  return (Array.isArray(rows) ? rows : []) as GraphExperiment[];
+  let rows = await prisma.$queryRawUnsafe(sql, ...params);
+  let result = (Array.isArray(rows) ? rows : []) as GraphExperiment[];
+
+  // If too few results, retry without date filter
+  if (result.length < 50) {
+    console.log(`[AI Ask] Graph experiments: only ${result.length} with date filter, retrying without`);
+    const broadSql = `
+      SELECT "id", "experimentId", "testName", "changeType", "elementChanged", "winningVar"
+      FROM "Experiment"
+      WHERE ${where.join(" AND ")}
+      ORDER BY COALESCE("dateConcluded", "dateLaunched") DESC NULLS LAST
+      LIMIT 500
+    `;
+    rows = await prisma.$queryRawUnsafe(broadSql, ...params);
+    result = (Array.isArray(rows) ? rows : []) as GraphExperiment[];
+  }
+
+  console.log(`[AI Ask] Graph experiments: ${result.length} found`);
+  return result;
 }
 
 async function summarize(
