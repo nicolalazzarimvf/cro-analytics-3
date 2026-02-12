@@ -89,10 +89,10 @@ export default async function HomePage() {
       {/* Hero */}
       <div className="mb-10">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
-          CRO Analyst
+          CROmatic
         </h1>
         <p className="mt-3 max-w-2xl text-lg text-gray-500 dark:text-gray-400">
-          AI-powered experiment intelligence — explore data, discover patterns, and get actionable insights to accelerate your CRO programme.
+          AI-powered CRO analyst — explore experiment data, discover patterns, and get actionable insights to accelerate your programme.
         </p>
       </div>
 

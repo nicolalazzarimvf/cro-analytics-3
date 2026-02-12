@@ -14,8 +14,8 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen, userEmail
     <header className="sticky top-0 before:absolute before:inset-0 before:backdrop-blur-md max-lg:before:bg-white/90 dark:max-lg:before:bg-gray-800/90 before:bg-white after:absolute after:h-px after:inset-x-0 after:top-full after:bg-gray-200 dark:after:bg-gray-700/60 after:-z-10 before:-z-10 z-30 dark:before:bg-gray-800">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Left: hamburger */}
-          <div className="flex">
+          {/* Left: hamburger + brand */}
+          <div className="flex items-center gap-3">
             <button
               className="text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 lg:hidden"
               aria-controls="sidebar"
@@ -32,6 +32,24 @@ export default function DashboardHeader({ sidebarOpen, setSidebarOpen, userEmail
                 <rect x="4" y="17" width="16" height="2" />
               </svg>
             </button>
+            {/* Brand */}
+            <div className="flex items-center gap-2.5">
+              <img
+                src="/images/MVF_Logo_White.svg"
+                alt="MVF"
+                className="h-4 hidden dark:block"
+              />
+              <img
+                src="/images/MVF_Logo_Navy.svg"
+                alt="MVF"
+                className="h-4 dark:hidden"
+              />
+              <div className="h-5 w-px bg-gray-300 dark:bg-gray-600" />
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-sm font-bold text-gray-900 dark:text-gray-100 tracking-tight">CROmatic</span>
+                <span className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500">AI-powered CRO analyst</span>
+              </div>
+            </div>
           </div>
 
           {/* Right: theme toggle + user */}

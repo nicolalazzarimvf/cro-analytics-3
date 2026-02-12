@@ -5,8 +5,8 @@ import AppShell from "@/app/components/AppShell";
 import LoginWall from "@/app/components/LoginWall";
 
 export const metadata = {
-  title: "CRO Analyst",
-  description: "CRO Analyst v3",
+  title: "CROmatic — AI-powered CRO analyst",
+  description: "CROmatic by MVF — AI-powered CRO analyst",
   icons: {
     icon: "/images/analytics-logo.png",
   },

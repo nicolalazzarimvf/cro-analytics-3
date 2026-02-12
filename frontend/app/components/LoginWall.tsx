@@ -26,30 +26,26 @@ export default function LoginWall() {
         {/* Card */}
         <div className="relative z-10 w-full max-w-md">
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-8 shadow-xl dark:shadow-none text-center">
-            {/* Logo */}
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 dark:bg-violet-500/20">
-              <svg
-                className="h-8 w-8 text-violet-500"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605"
-                />
-              </svg>
+            {/* MVF Logo */}
+            <div className="mx-auto mb-5">
+              <img
+                src="/images/MVF_Logo_White.svg"
+                alt="MVF"
+                className="mx-auto h-6 hidden dark:block opacity-50"
+              />
+              <img
+                src="/images/MVF_Logo_Navy.svg"
+                alt="MVF"
+                className="mx-auto h-6 dark:hidden opacity-40"
+              />
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-              CRO Analyst
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+              CROmatic
             </h1>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              AI-powered experiment intelligence platform
+              AI-powered CRO analyst
             </p>
 
             {/* Divider */}
