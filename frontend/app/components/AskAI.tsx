@@ -231,6 +231,7 @@ type KpiCard = {
   subtitle: string;
   value: string;
   change: number;
+  changeLabel?: string;
   sparkline: number[];
 };
 

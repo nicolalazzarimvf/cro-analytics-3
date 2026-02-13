@@ -7,6 +7,7 @@ type Card = {
   subtitle: string;
   value: string;
   change: number;
+  changeLabel?: string;
   sparkline: number[];
 };
 
@@ -85,7 +86,7 @@ export default function DashboardCards({
                 {card.value}
               </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-col items-end gap-0.5">
               {card.change >= 0 ? (
                 <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500">
                   +{card.change}%
@@ -95,6 +96,9 @@ export default function DashboardCards({
                   {card.change}%
                 </span>
               )}
+              {card.changeLabel ? (
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">{card.changeLabel}</span>
+              ) : null}
             </div>
           </div>
           <div className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">

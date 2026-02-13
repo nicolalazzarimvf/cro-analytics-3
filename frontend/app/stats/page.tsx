@@ -54,6 +54,7 @@ export default async function StatsPage() {
 
   const curr = perMonth[perMonth.length - 1];
   const prev = perMonth[perMonth.length - 2];
+  const changeLabel = `${curr.label} vs ${prev.label}`;
 
   const cards = [
     {
@@ -61,6 +62,7 @@ export default async function StatsPage() {
       subtitle: "CONCLUDED",
       value: curr.total.toString(),
       change: pctChange(curr.total, prev.total),
+      changeLabel,
       sparkline: perMonth.map((m) => m.total),
     },
     {
@@ -68,6 +70,7 @@ export default async function StatsPage() {
       subtitle: "WINNERS",
       value: `${curr.winRate}%`,
       change: curr.winRate - prev.winRate,
+      changeLabel,
       sparkline: perMonth.map((m) => m.winRate),
     },
     {
@@ -79,6 +82,7 @@ export default async function StatsPage() {
         maximumFractionDigits: 0,
       }).format(curr.revenue),
       change: pctChange(curr.revenue, prev.revenue),
+      changeLabel,
       sparkline: perMonth.map((m) => m.revenue),
     },
   ];
