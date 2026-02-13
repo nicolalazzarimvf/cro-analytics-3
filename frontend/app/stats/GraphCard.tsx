@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import * as ThreeLib from "three";
 import { useTheme } from "@/app/context/ThemeContext";
 
@@ -40,6 +41,8 @@ export default function GraphCard({
   const hasData = data && data.nodes.length > 0;
   const graphRef = useRef<any>(null);
   const THREE = ThreeLib;
+  const searchParams = useSearchParams();
+  const isBare = searchParams.get("bare") === "1" || searchParams.get("bare") === "true";
 
   // Responsive graph width
   const containerRef = useRef<HTMLDivElement>(null);
@@ -219,7 +222,7 @@ export default function GraphCard({
                 {experimentNodes.map((n) => (
                   <Link
                     key={n.id}
-                    href={n.href!}
+                    href={isBare ? `${n.href!}${n.href!.includes("?") ? "&" : "?"}bare=1` : n.href!}
                     className="flex items-start justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
                   >
                     <div className="min-w-0">
