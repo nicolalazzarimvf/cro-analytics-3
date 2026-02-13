@@ -129,6 +129,9 @@ export default function GraphClient() {
           Each experiment is connected to its attributes — change type, element, vertical, geo, and brand.
           Clusters reveal common testing patterns across the programme.
         </p>
+        <p className="mt-2 max-w-3xl text-sm font-medium text-violet-600 dark:text-violet-400">
+          Use the toggle buttons below the graph to show or hide layers and explore different dimensions of the data.
+        </p>
         {data ? (
           <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
             {data.experimentCount} experiments · {data.nodes.length} nodes · {data.links.length} connections
