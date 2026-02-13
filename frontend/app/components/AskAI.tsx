@@ -419,7 +419,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                         <button
                           type="button"
                           onClick={() => setModalId(uuid)}
-                          className="text-blue-700 hover:underline"
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
                         >
                           {row.experimentId ?? "—"}
                         </button>
@@ -671,7 +671,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                       )}
                     </div>
                     <div className="text-[11px] text-gray-400 dark:text-gray-500">
-                      Winner: <span className="font-medium text-emerald-600 dark:text-emerald-400">{w.winningVar}</span>
+                      Winner Var: <span className="font-medium text-emerald-600 dark:text-emerald-400">{w.winningVar}</span>
                     </div>
                   </div>
                   <div className="shrink-0 font-semibold text-gray-900 dark:text-gray-100 text-right tabular-nums">
@@ -919,8 +919,14 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
 
       {/* ── Experiment detail modal ── */}
       {modalId ? (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-2xl bg-white dark:bg-gray-800 shadow-xl">
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setModalId(null)}
+        >
+          <div
+            className="relative h-[80vh] w-[90vw] max-w-5xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-2xl ring-1 ring-white/10"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               onClick={() => setModalId(null)}

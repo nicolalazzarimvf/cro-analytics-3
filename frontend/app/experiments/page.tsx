@@ -173,7 +173,7 @@ export default async function ExperimentsPage({
                     <td className="px-4 py-3">
                       <Link
                         href={`/experiments/${row.id}?from=experiments`}
-                        className="font-medium text-gray-900 dark:text-gray-100 hover:underline"
+                        className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
                       >
                         {row.testName || "Untitled test"}
                       </Link>

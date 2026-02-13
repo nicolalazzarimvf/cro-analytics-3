@@ -148,7 +148,7 @@ export default function HowItWorksPage() {
       <section className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-6 shadow-sm dark:shadow-none">
         <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
           <Link href="/stats" className="text-blue-600 dark:text-blue-400 hover:underline">
-            Stats
+            Dashboard
           </Link>
           <span className="text-gray-400 dark:text-gray-500">•</span>
           <Link href="/experiments" className="text-blue-600 dark:text-blue-400 hover:underline">

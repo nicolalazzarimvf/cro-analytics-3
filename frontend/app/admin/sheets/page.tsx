@@ -11,7 +11,7 @@ export default function SheetsAdminPage() {
       </p>
       <SheetsClient />
       <p className="mt-6">
-        <Link href="/admin" className="text-gray-600 dark:text-gray-400 hover:underline">Back to Admin</Link>
+        <Link href="/admin" className="text-blue-600 dark:text-blue-400 hover:underline">Back to Admin</Link>
       </p>
     </main>
   );
