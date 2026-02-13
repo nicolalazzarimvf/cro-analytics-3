@@ -113,12 +113,20 @@ function formatMoney(value: number) {
   }).format(value);
 }
 
+type TopWinnerExperiment = {
+  id?: string;
+  experimentId?: string;
+  testName?: string;
+  winningVar: string;
+  extrap: number;
+};
+
 function computeBreakdowns(rows: Record<string, any>[]) {
   const verticalMap = new Map<string, number>();
   const geoMap = new Map<string, number>();
-  const winnerMap = new Map<string, { count: number; extrap: number }>();
   let withWinners = 0;
   let totalExtrap = 0;
+  const topExperiments: TopWinnerExperiment[] = [];
 
   for (const r of rows) {
     const v = ((r.vertical ?? "") as string).trim() || "Unknown";
@@ -130,18 +138,24 @@ function computeBreakdowns(rows: Record<string, any>[]) {
     const w = ((r.winningVar ?? "") as string).trim();
     if (w) {
       withWinners++;
-      const prev = winnerMap.get(w) ?? { count: 0, extrap: 0 };
       const ext = Number(r.monthlyExtrap ?? 0) || 0;
-      winnerMap.set(w, { count: prev.count + 1, extrap: prev.extrap + ext });
       totalExtrap += ext;
+      if (ext > 0) {
+        topExperiments.push({
+          id: r.id as string | undefined,
+          experimentId: r.experimentId as string | undefined,
+          testName: r.testName as string | undefined,
+          winningVar: w,
+          extrap: ext,
+        });
+      }
     }
   }
 
   const sortedVerticals = Array.from(verticalMap.entries()).sort((a, b) => b[1] - a[1]);
   const sortedGeos = Array.from(geoMap.entries()).sort((a, b) => b[1] - a[1]);
-  const sortedWinners = Array.from(winnerMap.entries())
-    .map(([name, data]) => ({ name, ...data }))
-    .sort((a, b) => b.extrap - a.extrap || b.count - a.count);
+  // Top 5 individual experiments by monthly extrap
+  const topWinners = topExperiments.sort((a, b) => b.extrap - a.extrap).slice(0, 5);
 
   const uniqueVerticals = sortedVerticals.filter(([k]) => k !== "Unknown").length;
   const uniqueGeos = sortedGeos.filter(([k]) => k !== "Unknown").length;
@@ -154,7 +168,7 @@ function computeBreakdowns(rows: Record<string, any>[]) {
     totalExtrap,
     verticals: sortedVerticals,
     geos: sortedGeos,
-    winners: sortedWinners,
+    topWinners,
   };
 }
 
@@ -632,28 +646,41 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
             </div>
           </div>
 
-          {/* Winners */}
+          {/* Top winner experiments */}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top winners</h3>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top winner experiments</h3>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">By monthly extrapolated revenue</p>
             <div className="mt-3 grid gap-2 text-sm">
-              {breakdowns.winners.slice(0, 8).map((w) => (
+              {breakdowns.topWinners.map((w, idx) => (
                 <div
-                  key={w.name}
-                  className="flex items-start justify-between gap-4 border-b border-gray-100 dark:border-gray-700 pb-1.5 last:border-b-0"
+                  key={w.id ?? w.experimentId ?? idx}
+                  className="flex items-start justify-between gap-3 border-b border-gray-100 dark:border-gray-700 pb-2 last:border-b-0"
                 >
-                  <div>
-                    <div className="font-medium text-gray-900 dark:text-gray-100">{w.name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{w.count} experiment{w.count !== 1 ? "s" : ""}</div>
-                  </div>
-                  {w.extrap > 0 ? (
-                    <div className="font-semibold text-gray-900 dark:text-gray-100 text-right">
-                      {formatMoney(w.extrap)}
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                      {w.id ? (
+                        <button
+                          type="button"
+                          onClick={() => setModalId(w.id!)}
+                          className="text-left text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {w.testName || w.experimentId || "Experiment"}
+                        </button>
+                      ) : (
+                        w.testName || w.experimentId || "Experiment"
+                      )}
                     </div>
-                  ) : null}
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500">
+                      Winner: <span className="font-medium text-emerald-600 dark:text-emerald-400">{w.winningVar}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 font-semibold text-gray-900 dark:text-gray-100 text-right tabular-nums">
+                    {formatMoney(w.extrap)}
+                  </div>
                 </div>
               ))}
-              {!breakdowns.winners.length ? (
-                <div className="text-gray-500 dark:text-gray-400 text-xs">No winners found.</div>
+              {!breakdowns.topWinners.length ? (
+                <div className="text-gray-500 dark:text-gray-400 text-xs">No winner experiments found.</div>
               ) : null}
             </div>
           </div>
