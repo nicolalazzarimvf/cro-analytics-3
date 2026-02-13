@@ -99,7 +99,7 @@ export default function ImportAutoClient() {
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 {ok
                   ? "Your database is up to date. Continue to stats for the last completed month."
-                  : "Check your Google permissions and try again."}
+                  : "Your Google session may have expired. Please sign out and sign back in, then try again."}
               </p>
             </div>
             <button
@@ -111,19 +111,30 @@ export default function ImportAutoClient() {
             </button>
           </div>
 
-          <div className="mt-6 flex items-center gap-3">
-            <Link
-              href="/stats"
-              className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
-            >
-              Go to Dashboard
-            </Link>
-            <Link
-              href="/experiments"
-              className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-            >
-              View experiments
-            </Link>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            {ok ? (
+              <>
+                <Link
+                  href="/stats"
+                  className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600"
+                >
+                  Go to Dashboard
+                </Link>
+                <Link
+                  href="/experiments"
+                  className="rounded-lg border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  View experiments
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/api/auth/signout"
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Sign out &amp; re-login
+              </Link>
+            )}
           </div>
 
           {result ? (

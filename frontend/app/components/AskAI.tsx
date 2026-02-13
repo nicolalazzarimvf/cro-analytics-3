@@ -760,7 +760,10 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                     <div className="space-y-2">
                       {changeNodes.length > 0 ? (
                         <div>
-                          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Change types</div>
+                          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Change types</div>
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 mb-1.5">
+                            Select a label to see related experiments — e.g. tap <span className="font-medium text-blue-500">&ldquo;New component&rdquo;</span> to list all new-component tests.
+                          </div>
                           <div className="flex flex-wrap gap-1.5">
                             {changeNodes.map((n) => {
                               const cnt = graphData.patternCounts.get(n.id) ?? 0;
@@ -788,7 +791,10 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                       ) : null}
                       {elementNodes.length > 0 ? (
                         <div>
-                          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Elements</div>
+                          <div className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Elements</div>
+                          <div className="text-[10px] text-gray-400 dark:text-gray-500 mb-1.5">
+                            Select an element to filter — e.g. tap <span className="font-medium text-emerald-500">&ldquo;Hero&rdquo;</span> to see all hero-related experiments.
+                          </div>
                           <div className="flex flex-wrap gap-1.5">
                             {elementNodes.map((n) => {
                               const cnt = graphData.patternCounts.get(n.id) ?? 0;
