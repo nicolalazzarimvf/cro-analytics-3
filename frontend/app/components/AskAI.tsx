@@ -931,9 +931,12 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
             <button
               type="button"
               onClick={() => setModalId(null)}
-              className="absolute right-3 top-3 z-10 rounded-full bg-white/80 dark:bg-gray-700/80 px-2 py-1 text-sm font-semibold text-gray-700 dark:text-gray-300 shadow hover:bg-white dark:hover:bg-gray-700"
+              className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 shadow-md transition-all hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 hover:scale-110"
+              aria-label="Close"
             >
-              x
+              <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
             </button>
             <iframe
               src={`/experiments/${modalId}?bare=1`}
