@@ -12,7 +12,7 @@ type Props = {
 
 const NAV_ITEMS = [
   {
-    label: "Stats",
+    label: "Dashboard",
     href: "/stats",
     icon: (
       <svg className="shrink-0 fill-current" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
