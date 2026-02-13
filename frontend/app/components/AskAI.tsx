@@ -647,7 +647,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
           </div>
 
           {/* Top winner experiments */}
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
+          <div className="sm:col-span-2 lg:col-span-1 rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Top winner experiments</h3>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">By monthly extrapolated revenue</p>
             <div className="mt-3 grid gap-2 text-sm">
