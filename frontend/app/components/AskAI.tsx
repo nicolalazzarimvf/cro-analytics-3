@@ -413,7 +413,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                         (row.experimentId as string) ?? "—"
                       )}
                     </td>
-                    <td className="px-3 py-2 max-w-[240px] truncate">
+                    <td className="px-3 py-2 max-w-[240px]">
                       {row.testName ?? "—"}
                     </td>
                     <td className="px-3 py-2">{row.vertical ?? "—"}</td>
@@ -816,7 +816,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                                 {exp.testName ?? exp.experimentId}
                               </div>
                               <div className="flex flex-wrap gap-1.5 mt-1">

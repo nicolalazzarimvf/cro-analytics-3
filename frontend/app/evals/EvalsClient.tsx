@@ -265,7 +265,7 @@ export default function EvalsClient() {
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400 capitalize">
                       {r.category.replace(/_/g, " ")}
                     </td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100 truncate max-w-xs">
+                    <td className="px-4 py-3 text-gray-900 dark:text-gray-100 max-w-xs">
                       {r.input}
                     </td>
                     <td className="px-4 py-3">

@@ -223,9 +223,9 @@ export default function GraphCard({
                     className="flex items-start justify-between gap-2 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 px-3 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-800 transition-colors"
                   >
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-blue-700 dark:text-blue-300 truncate">{n.label}</div>
+                      <div className="text-sm font-medium text-blue-700 dark:text-blue-300">{n.label}</div>
                       {n.title ? (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{n.title}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.title}</div>
                       ) : null}
                     </div>
                   </Link>
