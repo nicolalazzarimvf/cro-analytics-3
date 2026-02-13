@@ -3,7 +3,7 @@
 import { useState, ReactNode } from "react";
 import Sidebar from "./Sidebar";
 import DashboardHeader from "./DashboardHeader";
-import Footer from "./Footer";
+
 import { ThemeProvider } from "@/app/context/ThemeContext";
 
 type Props = {
@@ -29,7 +29,6 @@ export default function AppShell({ children, userEmail }: Props) {
               {children}
             </div>
           </main>
-          <Footer />
         </div>
       </div>
     </ThemeProvider>
