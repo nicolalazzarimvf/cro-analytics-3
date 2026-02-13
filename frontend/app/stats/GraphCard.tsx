@@ -42,7 +42,7 @@ export default function GraphCard({
   const graphRef = useRef<any>(null);
   const THREE = ThreeLib;
   const searchParams = useSearchParams();
-  const isBare = searchParams.get("bare") === "1" || searchParams.get("bare") === "true";
+  const isBare = searchParams?.get("bare") === "1" || searchParams?.get("bare") === "true";
 
   // Responsive graph width
   const containerRef = useRef<HTMLDivElement>(null);
