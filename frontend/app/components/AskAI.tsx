@@ -515,8 +515,8 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
         </div>
       ) : null}
 
-      {/* ── KPI cards ── */}
-      {kpiCards && kpiCards.length > 0 ? (
+      {/* ── KPI cards (hide when AI response is showing) ── */}
+      {!result && kpiCards && kpiCards.length > 0 ? (
         <div className="mt-6">
           <DashboardCards cards={kpiCards} labels={kpiLabels ?? []} />
         </div>
