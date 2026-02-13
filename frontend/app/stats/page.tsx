@@ -74,7 +74,7 @@ export default async function StatsPage() {
       sparkline: perMonth.map((m) => m.winRate),
     },
     {
-      title: "Revenue Impact",
+      title: "Revenue (All Tests)",
       subtitle: "MONTHLY EXTRAP",
       value: new Intl.NumberFormat("en-GB", {
         style: "currency",

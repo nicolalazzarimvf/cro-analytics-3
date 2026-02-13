@@ -592,7 +592,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800 p-5 shadow-sm dark:shadow-none">
             <div className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              {breakdowns.totalExtrap > 0 ? "Total monthly extrap" : "Geos"}
+              {breakdowns.totalExtrap > 0 ? "Winner Revenue" : "Geos"}
             </div>
             <div className="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">
               {breakdowns.totalExtrap > 0
@@ -600,7 +600,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                 : breakdowns.uniqueGeos}
             </div>
             <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {breakdowns.totalExtrap > 0 ? "sum across winners" : "unique geos"}
+              {breakdowns.totalExtrap > 0 ? "monthly extrap from winning tests" : "unique geos"}
             </div>
           </div>
         </div>
