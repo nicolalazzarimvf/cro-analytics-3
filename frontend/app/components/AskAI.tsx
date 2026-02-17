@@ -529,7 +529,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
           prose-h4:text-sm prose-h4:font-semibold prose-h4:mt-3 prose-h4:mb-1
           prose-p:text-slate-600 dark:prose-p:text-slate-300 prose-p:leading-relaxed prose-p:my-1.5
           prose-li:text-slate-600 dark:prose-li:text-slate-300 prose-li:my-0.5
-          prose-strong:text-slate-900 dark:prose-strong:text-slate-100
+          prose-strong:text-slate-900 dark:prose-strong:text-slate-100 prose-strong:block
           prose-em:text-slate-500 dark:prose-em:text-slate-400
           prose-code:text-slate-700 dark:prose-code:text-slate-300 prose-code:bg-slate-100 dark:prose-code:bg-slate-700 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none
           prose-hr:my-3 prose-hr:border-gray-100 dark:prose-hr:border-gray-700
