@@ -60,7 +60,7 @@ function ThinkingDots() {
 type GNode = { id: string; label: string; type: string };
 type GLink = { source: string; target: string };
 
-function buildGraphData(graphRows: Record<string, any>[]) {
+function buildGraphData(graphRows: Record<string, any>[], graphExperiments?: GraphExperiment[]) {
   const nodesMap = new Map<string, GNode>();
   const links: GLink[] = [];
   const patternCounts = new Map<string, number>();
@@ -83,6 +83,38 @@ function buildGraphData(graphRows: Record<string, any>[]) {
     if (!seenLinks.has(linkKey)) {
       seenLinks.add(linkKey);
       links.push({ source: ctKey, target: elKey });
+    }
+  }
+
+  // Add experiment nodes linked to their change type and element
+  if (graphExperiments) {
+    for (const exp of graphExperiments.slice(0, 60)) {
+      const expKey = `exp:${exp.id ?? exp.experimentId}`;
+      const label = exp.testName || exp.experimentId || "Experiment";
+      const hasWinner = !!(exp.winningVar && exp.winningVar.trim());
+      if (!nodesMap.has(expKey)) {
+        nodesMap.set(expKey, { id: expKey, label, type: hasWinner ? "winner" : "experiment" });
+      }
+      const ct = (exp.changeType ?? "").trim();
+      const el = (exp.elementChanged ?? "").trim();
+      if (ct) {
+        const ctKey = `ct:${ct}`;
+        if (!nodesMap.has(ctKey)) nodesMap.set(ctKey, { id: ctKey, label: ct, type: "change" });
+        const linkKey = `${expKey}->${ctKey}`;
+        if (!seenLinks.has(linkKey)) {
+          seenLinks.add(linkKey);
+          links.push({ source: expKey, target: ctKey });
+        }
+      }
+      if (el) {
+        const elKey = `el:${el}`;
+        if (!nodesMap.has(elKey)) nodesMap.set(elKey, { id: elKey, label: el, type: "element" });
+        const linkKey = `${expKey}->${elKey}`;
+        if (!seenLinks.has(linkKey)) {
+          seenLinks.add(linkKey);
+          links.push({ source: expKey, target: elKey });
+        }
+      }
     }
   }
 
@@ -690,7 +722,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
 
       {/* ── Graph + experiments table + source data ── */}
       {result ? (() => {
-        const graphData = buildGraphData(result.graphRows);
+        const graphData = buildGraphData(result.graphRows, result.graphExperiments);
         const selectedExps = expandedAttrs.size > 0
           ? Array.from(expandedAttrs).flatMap((attr) => getExperimentsForAttr(attr, result.graphExperiments))
           : [];
@@ -726,15 +758,19 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                         return expandedAttrs.has(node.id) ? "#1d4ed8" : "#3b82f6";
                       if (node.type === "element")
                         return expandedAttrs.has(node.id) ? "#059669" : "#10b981";
+                      if (node.type === "winner") return "#f59e0b";
+                      if (node.type === "experiment") return "#6b7280";
                       return "#6b7280";
                     }}
-                    nodeLabel={(n: any) => {
-                      const cnt = graphData.patternCounts.get(n.id) ?? 0;
-                      return `${n.label} (${cnt} experiments)`;
-                    }}
                     nodeVal={(n: any) => {
+                      if (n.type === "experiment" || n.type === "winner") return 2;
                       const cnt = graphData.patternCounts.get(n.id) ?? 1;
                       return Math.max(4, Math.min(14, cnt * 0.8));
+                    }}
+                    nodeLabel={(n: any) => {
+                      if (n.type === "experiment" || n.type === "winner") return n.label;
+                      const cnt = graphData.patternCounts.get(n.id) ?? 0;
+                      return `${n.label} (${cnt} experiments)`;
                     }}
                     linkWidth={1.5}
                     linkDirectionalParticles={1}
@@ -742,6 +778,14 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                     warmupTicks={30}
                     cooldownTicks={100}
                   />
+                </div>
+
+                {/* Graph legend */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-gray-500 dark:text-gray-400">
+                  <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />Change type</span>
+                  <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />Element</span>
+                  <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-500" />Winner experiment</span>
+                  <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-500" />Experiment</span>
                 </div>
 
                 {/* Clickable attribute chips — replaces unreliable 3D node clicks */}
