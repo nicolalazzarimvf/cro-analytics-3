@@ -283,19 +283,23 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
   const [tablePage, setTablePage] = useState(1);
   const [expandedAttrs, setExpandedAttrs] = useState<Set<string>>(new Set());
 
-  // Responsive graph width
+  // Responsive graph width — observe container size changes
   const graphContainerRef = useRef<HTMLDivElement>(null);
   const [graphWidth, setGraphWidth] = useState(600);
-  const measureWidth = useCallback(() => {
-    if (graphContainerRef.current) {
-      setGraphWidth(graphContainerRef.current.clientWidth);
-    }
-  }, []);
   useEffect(() => {
-    measureWidth();
-    window.addEventListener("resize", measureWidth);
-    return () => window.removeEventListener("resize", measureWidth);
-  }, [measureWidth]);
+    const el = graphContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        if (w > 0) setGraphWidth(w);
+      }
+    });
+    ro.observe(el);
+    // initial measure
+    if (el.clientWidth > 0) setGraphWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, [result]);
 
   // Theme-aware graph background
   const { currentTheme } = useTheme();
@@ -751,7 +755,7 @@ export default function AskAI({ defaultRows, defaultLabel, kpiCards, kpiLabels }
                   <ForceGraph3D
                     graphData={{ nodes: graphData.nodes, links: graphData.links }}
                     width={graphWidth}
-                    height={400}
+                    height={420}
                     backgroundColor={graphBg}
                     nodeColor={(node: any) => {
                       if (node.type === "change")
